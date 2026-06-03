@@ -1,0 +1,26 @@
+{
+  "id": "crisis-response",
+  "title": "Crisis Response",
+  "audience": "Humanitarian crisis monitor watching disaster posts in low-resource regions",
+  "headline": "Zero-shot LLM-retrieved knowledge handles cities outside the training set.",
+  "engine_focus": "retrievezero",
+  "onboard_city": "Pekanbaru",
+  "comparison_default": false,
+  "posts": [
+    {
+      "post": "Banjir besar di tengah Pekanbaru, jalan ditutup semua",
+      "user_posts": null,
+      "delay_ms": 0
+    },
+    {
+      "post": "Need help — rescue boats in central Pekanbaru area, water rising fast",
+      "user_posts": null,
+      "delay_ms": 3500
+    },
+    {
+      "post": "Pekanbaru floodwater up to my knee outside the masjid",
+      "user_posts": null,
+      "delay_ms": 7000
+    }
+  ]
+}

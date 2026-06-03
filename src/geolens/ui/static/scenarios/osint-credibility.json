@@ -1,0 +1,20 @@
+{
+  "id": "osint-credibility",
+  "title": "OSINT Credibility Check",
+  "audience": "Journalist or platform-safety analyst verifying a viral post",
+  "headline": "Triangulation surfaces credibility signals no single engine can catch.",
+  "engine_focus": "triangulator",
+  "onboard_city": null,
+  "comparison_default": true,
+  "posts": [
+    {
+      "post": "Massive fire at Marina Bay Sands! #Singapore #breaking",
+      "user_posts": [
+        "Best ramen in Shibuya tonight",
+        "Shinjuku always crowded these days",
+        "Got sake at a tiny bar in Asakusa"
+      ],
+      "delay_ms": 0
+    }
+  ]
+}

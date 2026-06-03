@@ -1,0 +1,51 @@
+id,post,user_posts,ground_truth_city,should_disagree
+sg-explicit-1,Streetlight outside blk 105 Tengah dead for 3 days now,,Tengah Plantation Crescent,0
+sg-explicit-2,Flooding near Tengah Park playground after the morning rain,,Tengah Plantation Crescent,0
+sg-explicit-3,Anyone else's mailbox at Tengah BTO not locking properly?,,Tengah Plantation Crescent,0
+sg-explicit-4,Just got off at Tampines MRT — east-west line packed today,,Tampines,0
+sg-explicit-5,Long queue at the new Punggol hawker centre,,Punggol,0
+sg-explicit-6,Bedok 85 famous bak chor mee not too bad today,,Bedok,0
+sg-explicit-7,Jurong East lake gardens looking very pretty after the rain,,Jurong East,0
+sg-explicit-8,Woodlands checkpoint chaos this morning,,Woodlands,0
+sg-implicit-1,Best kaya toast and kopi in town,,Singapore,0
+sg-implicit-2,Hawker centre packed for lunch as usual lah,,Singapore,0
+sg-implicit-3,Just landed at Changi after a long flight,,Singapore,0
+sg-implicit-4,MRT smelly today and aircon broken,,Singapore,0
+sg-implicit-5,7-eleven kopi peng got kick today,,Singapore,0
+sg-implicit-6,The hawker uncle remembered my usual order — old school service,,Singapore,0
+osint-1,Massive fire at Marina Bay Sands! #Singapore #breaking,Best ramen in Shibuya tonight|Shinjuku always crowded|Got sake at Asakusa,Singapore,1
+osint-2,Just saw the Merlion up close — magical at night,Toronto winter is brutal this year|Snow at Yonge-Dundas|CN Tower lit up,Singapore,1
+osint-3,Hong Kong skyline incredible from Victoria Peak,Sydney Opera House looking stunning|Bondi was packed today|Manly ferry queue,Hong Kong,1
+osint-4,Bangkok rooftop bar has the best view of Wat Arun,Tokyo skytree at night|Shibuya scramble crazy|Ginza shopping,Bangkok,1
+intl-1,Petaling Jaya mamak supper at 2am,,Petaling Jaya,0
+intl-2,KL traffic on the federal highway is brutal as always,,Kuala Lumpur,0
+intl-3,Manila MRT-3 broke down again today,,Manila,0
+intl-4,Saigon coffee on Bui Vien is the best thing ever,,Ho Chi Minh City,0
+intl-5,Tokyo Shibuya scramble during cherry blossom season,,Tokyo,0
+intl-6,Times Square always feels overwhelming at night,,New York,0
+crisis-1,Banjir besar di tengah Pekanbaru jalan ditutup semua,,Pekanbaru,0
+crisis-2,Need help — rescue boats in central Pekanbaru area water rising fast,,Pekanbaru,0
+crisis-3,Pekanbaru floodwater up to my knee outside the masjid,,Pekanbaru,0
+crisis-4,Jakarta banjir sudah masuk rumah help,,Jakarta,0
+ooc-1,The Phoenix sunset over the desert is unbelievable,,Phoenix,0
+ooc-2,Munich Christmas market opens this weekend at Marienplatz,,Munich,0
+hard-sem-1,COE just hit a new all-time high — when can normal people afford a car,,Singapore,0
+hard-sem-2,Booked my BMT date today NS officially starting next month,,Singapore,0
+hard-sem-3,Curry puff and teh tarik for breakfast then ondeh ondeh later,,Singapore,0
+hard-sem-4,The MTR strike is still ongoing day three now,,Hong Kong,0
+hard-sem-5,Late night ramen and a tall Asahi after work,,Tokyo,0
+hard-sem-6,The cable car up to the peak looked spectacular at night,,Hong Kong,0
+hard-sem-7,Padang sebakaran setelah hujan dan listrik mati lagi,,Pekanbaru,0
+disagree-1,Sentosa beach was perfect this afternoon,Bangkok BTS getting crowded again|Wat Arun looking magical at sunset|Khao San Road madness,Singapore,1
+disagree-2,Just landed at Changi after a great trip,Tower Bridge sunset is unreal|Borough Market this morning|Tube delays on the Northern Line,Singapore,1
+disagree-3,The Marina Bay light show is wild from this angle,Causeway Bay shopping marathon today|Star Ferry across the harbour|Mong Kok night market,Singapore,1
+disagree-4,Wandering around Orchard Road on a quiet Sunday,Cafe in Roppongi this morning|Harajuku window shopping|Late ramen in Shinjuku,Singapore,1
+multilang-1,Hôm nay mưa to ở Sài Gòn quá đường ngập hết rồi,,Ho Chi Minh City,0
+multilang-2,Macet parah di pintu tol Jakarta sore ini gak gerak gerak,,Jakarta,0
+multilang-3,รถติดแถวสยามวันนี้หนักมาก rush hour ตามปกติ,,Bangkok,0
+multilang-4,Banjir lagi di sekitar Pekanbaru area Sukajadi mohon doanya,,Pekanbaru,0
+sarcasm-1,Yet another perfect day on the MRT — only two breakdowns and a smelly cabin,,Singapore,0
+sarcasm-2,"Not in Tokyo for once, just suffering through the BTS rush hour like a local",,Bangkok,0
+ambig-1,The expressway gridlock is somehow worse than yesterday and the rain isn't helping,,Singapore,0
+ambig-3,Late night MRT and the announcements are louder than the conversations,,Singapore,0
+ambig-4,Skyline view from the rooftop bar tonight is unreal,,Hong Kong,0

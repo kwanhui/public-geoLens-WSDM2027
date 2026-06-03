@@ -1,0 +1,26 @@
+{
+  "id": "estate-management",
+  "title": "Estate Management",
+  "audience": "Incident-monitoring analyst at a municipal agency (illustrative)",
+  "headline": "From zero labelled data to operational classification in under a minute, no retraining.",
+  "engine_focus": "contrastgeo",
+  "onboard_city": "Tengah Plantation Crescent",
+  "comparison_default": false,
+  "posts": [
+    {
+      "post": "Streetlight outside blk 105 Tengah dead for 3 days now",
+      "user_posts": null,
+      "delay_ms": 0
+    },
+    {
+      "post": "Flooding near Tengah Park playground after the morning rain",
+      "user_posts": null,
+      "delay_ms": 3500
+    },
+    {
+      "post": "Anyone else's mailbox at Tengah BTO not locking properly?",
+      "user_posts": null,
+      "delay_ms": 7000
+    }
+  ]
+}

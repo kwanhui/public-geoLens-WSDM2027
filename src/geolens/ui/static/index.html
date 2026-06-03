@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GeoLens: Geolocation Workbench</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>GeoLens</h1>
+    <span class="header-sub">A workbench for social-media geolocation</span>
+    <a class="header-link" href="https://github.com/kwanhui/public-geoLens-WSDM2027" target="_blank">github</a>
+  </header>
+
+  <nav id="mode-tabs">
+    <button class="mode-tab active" data-mode="demo">Live demo</button>
+    <button class="mode-tab" data-mode="batch">Batch evaluation</button>
+  </nav>
+
+  <section id="scenario-strip" data-mode-target="demo">
+    <div class="scenario-strip-label">Try a scenario:</div>
+    <div id="scenario-tiles"></div>
+  </section>
+
+  <section id="batch-panel" class="batch-panel hidden" data-mode-target="batch">
+    <div class="batch-intro">
+      <h2>Bulk evaluation</h2>
+      <p>
+        Upload a CSV of inputs (and optional ground-truth city) to run all 9
+        engines + ensembles in one shot. The Space caps batches at 50 rows
+        and 5 batches per IP per hour.
+        <a href="/static/example_test_set.csv" download>Download the example CSV (50 rows)</a>
+        or <a href="https://github.com/kwanhui/public-geoLens-WSDM2027/blob/main/eval/README.md" target="_blank">read the format spec</a>.
+      </p>
+    </div>
+
+    <div class="batch-actions">
+      <input type="file" id="batch-file" accept=".csv,text/csv">
+      <button id="batch-run-btn" class="primary" disabled>Run evaluation</button>
+      <span id="batch-rowcount" class="batch-meta"></span>
+    </div>
+
+    <div id="batch-status" class="batch-status hidden" role="alert"></div>
+
+    <div id="batch-rollup" class="batch-rollup hidden">
+      <h3>Predicted-location distribution</h3>
+      <p class="per-bucket-note">Where the corpus places its posts. Computed without ground truth, so it works on any upload. These are raw post counts, not population-normalised rates: a larger count reflects more posts, not necessarily more events, so do not read it as incidence without a denominator.</p>
+      <div class="per-bucket-scroll">
+        <table class="summary-table rollup-table">
+          <thead><tr><th>City</th><th>Post-level</th><th>User-level</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="batch-summary" class="batch-summary hidden">
+      <h3>Per-engine summary</h3>
+      <div class="summary-meta"></div>
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Engine</th>
+            <th>Acc@1</th>
+            <th>Acc@5</th>
+            <th>Mean rank</th>
+            <th title="Median great-circle error of the top-1 prediction">Median km err.</th>
+            <th title="Accuracy within 161 km (100 miles) of ground truth">Acc@161km</th>
+            <th>Median latency</th>
+            <th>Total cost</th>
+            <th>n</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <h3 style="margin-top:14px">Ensemble summary</h3>
+      <table class="summary-table ensemble-table">
+        <thead>
+          <tr>
+            <th>Ensemble</th>
+            <th>Acc@1</th>
+            <th>Acc@5</th>
+            <th>Mean rank</th>
+            <th title="Median great-circle error of the consensus prediction">Median km err.</th>
+            <th title="Accuracy within 161 km (100 miles) of ground truth">Acc@161km</th>
+            <th>Differs from best single</th>
+            <th>n</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <details class="per-bucket-wrap">
+        <summary>Per-difficulty breakdown (Acc@1 by bucket)</summary>
+        <p class="per-bucket-note">Buckets come from a <code>bucket</code>/<code>tag</code> column, or are derived from the id prefix (e.g. <code>hard-sem-3</code> &rarr; <code>hard-sem</code>).</p>
+        <div class="per-bucket-scroll">
+          <table class="summary-table per-bucket-table">
+            <thead><tr><th>Bucket</th><th>n</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+      <div class="batch-downloads">
+        <button id="dl-results-csv" class="secondary">Download per-row results (CSV)</button>
+        <button id="dl-geojson" class="secondary">Download GeoJSON (WGS84)</button>
+        <button id="dl-summary-tex" class="secondary">Copy LaTeX summary table</button>
+        <button id="dl-manifest" class="secondary">Download run manifest (JSON)</button>
+      </div>
+    </div>
+
+    <div id="batch-rows" class="batch-rows hidden">
+      <h3>Per-row results <span class="batch-meta" id="rows-count"></span></h3>
+      <table class="rows-table">
+        <thead>
+          <tr>
+            <th>id</th>
+            <th>ground truth</th>
+            <th>status</th>
+            <th>post ensemble</th>
+            <th>user ensemble</th>
+            <th>disagreement</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <main data-mode-target="demo">
+    <section class="left-pane">
+      <div class="panel" id="input-panel">
+        <h2>Input</h2>
+        <p class="privacy-notice">In real mode, text you submit is sent to OpenAI/Anthropic for analysis and is not stored by GeoLens. Do not submit data about identifiable people without a lawful basis. The cross-task signal is a review prompt, not evidence.</p>
+        <div id="demo-error" class="batch-status error hidden" role="alert"></div>
+        <div id="active-scenario-banner" class="scenario-banner hidden">
+          <div>
+            <div class="banner-audience"></div>
+            <div class="banner-headline"></div>
+          </div>
+        </div>
+        <label for="post">Post text (post-level engines)</label>
+        <textarea id="post" rows="2" placeholder="Just landed at Changi, ready for kaya toast"></textarea>
+
+        <label for="user_handle">User handle (optional)</label>
+        <input type="text" id="user_handle" placeholder="@some_user">
+
+        <label for="user_posts">Recent user posts, one per line (user-level engines)</label>
+        <textarea id="user_posts" rows="3"
+                  placeholder="Just landed at Changi&#10;Long queue at Newton hawker"></textarea>
+
+        <div class="button-row">
+          <button id="geolocate-btn" class="primary">Geolocate</button>
+          <button id="export-verdict-btn" class="secondary hidden" title="Download the full verdict (per-engine votes, ensemble, disagreement score, and run manifest) as JSON for an audit trail.">⤓ Export verdict</button>
+          <button id="replay-btn" class="secondary hidden">▶ Replay scenario</button>
+          <label class="fusion-select" title="How engines within a bucket are combined. RRF (Cormack et al. 2009) uses only rank, so engines with incomparable confidence scales combine fairly.">
+            <span>Fusion</span>
+            <select id="ensemble-method">
+              <option value="weighted">Weighted sum</option>
+              <option value="rrf">Reciprocal Rank Fusion</option>
+            </select>
+          </label>
+          <label class="comparison-toggle">
+            <input type="checkbox" id="comparison-toggle">
+            <span>Show ensemble vs. best single engine</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel" id="onboard-panel">
+        <h2>Cold-start city onboarding</h2>
+        <div class="onboard-input-row">
+          <input type="text" id="onboard_city" placeholder="Tengah Plantation Crescent">
+          <button id="onboard-btn" class="primary">Onboard</button>
+        </div>
+        <div id="onboard-cards" class="onboard-cards hidden">
+          <div class="onboard-source"></div>
+          <ul id="onboard-warnings" class="onboard-warnings hidden" role="alert" aria-label="Profile warnings to fix before saving"></ul>
+          <div class="onboard-card" data-field="aliases">
+            <h3>Aliases</h3>
+            <textarea data-field="aliases" rows="1" placeholder="comma-separated"></textarea>
+          </div>
+          <div class="onboard-card" data-field="landmarks">
+            <h3>Landmarks</h3>
+            <textarea data-field="landmarks" rows="2" placeholder="comma-separated"></textarea>
+          </div>
+          <div class="onboard-card" data-field="foods">
+            <h3>Local foods</h3>
+            <textarea data-field="foods" rows="2" placeholder="comma-separated"></textarea>
+          </div>
+          <div class="onboard-card" data-field="slang">
+            <h3>Slang / phrases</h3>
+            <textarea data-field="slang" rows="1" placeholder="comma-separated"></textarea>
+          </div>
+          <div class="onboard-card" data-field="notes">
+            <h3>Notes</h3>
+            <textarea data-field="notes" rows="2"></textarea>
+          </div>
+          <div class="onboard-card" data-field="coords">
+            <h3>Map coordinate</h3>
+            <div class="coord-row">
+              <label class="visually-hidden" for="onboard_lat">Latitude (WGS84 decimal degrees)</label>
+              <input type="number" step="any" id="onboard_lat" placeholder="latitude" aria-label="Latitude, WGS84 decimal degrees">
+              <label class="visually-hidden" for="onboard_lon">Longitude (WGS84 decimal degrees)</label>
+              <input type="number" step="any" id="onboard_lon" placeholder="longitude" aria-label="Longitude, WGS84 decimal degrees">
+            </div>
+            <div class="coord-hint">Needed to pin the city on the map and score distance error. An LLM fills this when a key is set; edit it if it looks wrong.</div>
+          </div>
+          <div class="onboard-button-row">
+            <button id="onboard-save-btn" class="primary">Save & Use</button>
+            <button id="onboard-regen-btn" class="secondary">Re-generate from LLM</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="right-pane" role="region" aria-live="polite" aria-label="Geolocation results">
+      <div id="stub-banner" class="stub-banner hidden"></div>
+      <div id="map" role="img" aria-label="Map of predicted locations"></div>
+      <p id="map-summary" class="visually-hidden" aria-live="polite"></p>
+      <div id="map-notice" class="map-notice hidden"></div>
+      <div id="disagreement-banner" class="disagreement-banner hidden">
+        <div class="disagreement-headline">
+          <span class="disagreement-icon">⚠</span>
+          <span class="disagreement-text"></span>
+        </div>
+        <details class="disagreement-why">
+          <summary>What might this mean?</summary>
+          <ul>
+            <li><b>Travel post.</b> The user is visiting a different city from where they normally post.</li>
+            <li><b>Account compromise / shared account.</b> The post was made from a different person than the account owner.</li>
+            <li><b>Misleading or fake geotag.</b> The post claims a location it isn't actually from.</li>
+          </ul>
+        </details>
+      </div>
+
+      <!-- Ensembles: the headline result for each granularity bucket -->
+      <div id="ensembles" class="ensembles hidden">
+        <h2 class="section-title">Ensemble verdict</h2>
+        <div id="ensemble-cards" class="ensemble-cards"></div>
+      </div>
+
+      <!-- Optional comparison: ensemble vs best single engine in each bucket -->
+      <div id="comparison" class="comparison hidden">
+        <h2 class="section-title">Ensemble vs. best single engine</h2>
+        <div id="comparison-rows"></div>
+      </div>
+
+      <!-- Per-engine breakdown, collapsible by granularity -->
+      <div id="per-engine-section" class="per-engine-section hidden">
+        <h2 class="section-title">All engines (<span id="engine-count">0</span>)</h2>
+        <details class="engine-group" data-bucket="post" open>
+          <summary>Post-level engines (<span class="bucket-count" data-bucket="post">0</span>)</summary>
+          <div class="engine-cards" data-bucket="post"></div>
+        </details>
+        <details class="engine-group" data-bucket="user">
+          <summary>User-level engines (<span class="bucket-count" data-bucket="user">0</span>)</summary>
+          <div class="engine-cards" data-bucket="user"></div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span class="footer-engines">
+      Few-shot / zero-shot: <span class="engine-pill" data-family="research">ContrastGeo</span>
+      <span class="engine-pill" data-family="research">FewUser</span>
+      <span class="engine-pill" data-family="research">RetrieveZero</span>
+      Public:
+      <span class="engine-pill" data-family="gazetteer">Gazetteer</span>
+      <span class="engine-pill" data-family="gpt">GPT-4o-mini</span>
+      <span class="engine-pill" data-family="claude">Claude Haiku</span>
+    </span>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
