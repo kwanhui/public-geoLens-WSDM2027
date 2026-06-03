@@ -1,0 +1,37 @@
+# Trim the Docker build context. The Dockerfile only COPYs what it needs,
+# but excluding these speeds up `docker build` and HF Space builds.
+
+.git
+.gitignore
+
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Test + lint caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Tests not needed in the runtime image
+tests/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/

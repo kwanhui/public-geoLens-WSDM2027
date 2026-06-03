@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geolens"
+version = "0.1.0"
+description = "GeoLens: unified workbench for few-shot and zero-shot social media geolocation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Kwan Hui Lim" },
+]
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "python-multipart>=0.0.9",
+    "openai>=1.30",
+    "anthropic>=0.39",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# Real engine inference. Skipped by default so the demo runs in stub mode
+# on a cold HF Space without model downloads.
+real = [
+    "torch>=2.2",
+    "transformers>=4.40",
+    "sentence-transformers>=2.7",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "pre-commit>=3.7",
+]
+
+[project.scripts]
+geolens = "geolens.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/kwanhui/public-geoLens-WSDM2027"
+Issues = "https://github.com/kwanhui/public-geoLens-WSDM2027/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict_optional = true
+warn_unused_ignores = true
+ignore_missing_imports = true
