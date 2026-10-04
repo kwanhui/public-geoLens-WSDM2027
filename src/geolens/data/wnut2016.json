@@ -1,0 +1,456 @@
+{
+  "manifest": {
+    "tool": "GeoLens",
+    "version": "0.8.0",
+    "generated_at": "2026-06-01T17:13:49+00:00",
+    "k": 5,
+    "ensemble_method": "weighted",
+    "catalogue_size": 50,
+    "catalogue_sha": "bdacaeaed458",
+    "engines": {
+      "contrastgeo": "princeton-nlp/sup-simcse-bert-large-uncased",
+      "fewuser": "princeton-nlp/sup-simcse-roberta-large",
+      "retrievezero": "intfloat/e5-large",
+      "gazetteer_post": "rule-based",
+      "gazetteer_user": "rule-based",
+      "gpt4o_mini_post": "gpt-4o-mini",
+      "gpt4o_mini_user": "gpt-4o-mini",
+      "claude_haiku_post": "claude-haiku-4-5-20251001",
+      "claude_haiku_user": "claude-haiku-4-5-20251001"
+    },
+    "engine_modes": {
+      "contrastgeo": "real",
+      "fewuser": "real",
+      "retrievezero": "real",
+      "gazetteer_post": "real",
+      "gazetteer_user": "real",
+      "gpt4o_mini_post": "real",
+      "gpt4o_mini_user": "real",
+      "claude_haiku_post": "real",
+      "claude_haiku_user": "real"
+    }
+  },
+  "counts": {
+    "total": 887,
+    "post_level_rows": 487,
+    "userhome_rows": 200,
+    "ooc_rows": 150,
+    "error_rows": 0
+  },
+  "post_level": {
+    "engines": {
+      "contrastgeo": {
+        "name": "contrastgeo",
+        "acc_at_1": 0.34421364985163205,
+        "acc_at_5": 0.4599406528189911,
+        "acc_at_1_ci": [
+          0.2954998167626459,
+          0.3964390677753494
+        ],
+        "acc_at_5_ci": [
+          0.40747951381427316,
+          0.5133047707812114
+        ],
+        "mean_rank": 3.9376854599406528,
+        "median_error_km": 907.3823050751171,
+        "mean_error_km": 5120.338053171765,
+        "acc_at_161km": 0.37091988130563797,
+        "n_geo": 337,
+        "median_latency_ms": 66.77165202563629,
+        "total_cost_usd": 0.0,
+        "n_evaluated": 337
+      },
+      "gazetteer_post": {
+        "name": "gazetteer_post",
+        "acc_at_1": 0.36795252225519287,
+        "acc_at_5": 0.3768545994065282,
+        "acc_at_1_ci": [
+          0.3182223613900341,
+          0.4206591693136
+        ],
+        "acc_at_5_ci": [
+          0.3267775710886886,
+          0.42970745192706017
+        ],
+        "mean_rank": 4.14540059347181,
+        "median_error_km": 905.3553423100608,
+        "mean_error_km": 5448.013841107472,
+        "acc_at_161km": 0.3857566765578635,
+        "n_geo": 337,
+        "median_latency_ms": 1.3019730104133487,
+        "total_cost_usd": 0.0,
+        "n_evaluated": 337
+      },
+      "gpt4o_mini_post": {
+        "name": "gpt4o_mini_post",
+        "acc_at_1": 0.5341246290801187,
+        "acc_at_5": 0.6884272997032641,
+        "acc_at_1_ci": [
+          0.48078105887884703,
+          0.5866989949842588
+        ],
+        "acc_at_5_ci": [
+          0.6370900023184535,
+          0.7355172516213047
+        ],
+        "mean_rank": 2.8961424332344214,
+        "median_error_km": 0.0,
+        "mean_error_km": 3264.828164630261,
+        "acc_at_161km": 0.5667655786350149,
+        "n_geo": 337,
+        "median_latency_ms": 1394.0839470014907,
+        "total_cost_usd": 0.0225783,
+        "n_evaluated": 337
+      },
+      "claude_haiku_post": {
+        "name": "claude_haiku_post",
+        "acc_at_1": 0.5519287833827893,
+        "acc_at_5": 0.7210682492581603,
+        "acc_at_1_ci": [
+          0.4985459883973443,
+          0.6041410500899905
+        ],
+        "acc_at_5_ci": [
+          0.6709003566880839,
+          0.7662530357294279
+        ],
+        "mean_rank": 2.765578635014837,
+        "median_error_km": 0.0,
+        "mean_error_km": 3047.824177011006,
+        "acc_at_161km": 0.5756676557863502,
+        "n_geo": 337,
+        "median_latency_ms": 1049.5210419758223,
+        "total_cost_usd": 0.148704,
+        "n_evaluated": 337
+      }
+    },
+    "ensemble": {
+      "granularity": "post",
+      "acc_at_1": 0.5489614243323442,
+      "acc_at_5": 0.6943620178041543,
+      "acc_at_1_ci": [
+        0.4955804890303207,
+        0.6012387186863093
+      ],
+      "mean_rank": 2.8694362017804154,
+      "median_error_km": 0.0,
+      "acc_at_161km": 0.5756676557863502,
+      "n_evaluated": 337,
+      "differs_from_best_single_rate": 0.0771513353115727
+    },
+    "per_bucket": {
+      "intl": {
+        "bucket": "intl",
+        "n_rows": 137,
+        "acc_at_1": {
+          "contrastgeo": 0.7518248175182481,
+          "fewuser": 0.781021897810219,
+          "retrievezero": 0.8832116788321168,
+          "gazetteer_post": 0.8978102189781022,
+          "gazetteer_user": 0.8978102189781022,
+          "gpt4o_mini_post": 0.8978102189781022,
+          "gpt4o_mini_user": 0.8978102189781022,
+          "claude_haiku_post": 0.8978102189781022,
+          "claude_haiku_user": 0.8978102189781022
+        }
+      },
+      "hard-sem": {
+        "bucket": "hard-sem",
+        "n_rows": 200,
+        "acc_at_1": {
+          "contrastgeo": 0.065,
+          "fewuser": 0.085,
+          "retrievezero": 0.06,
+          "gazetteer_post": 0.005,
+          "gazetteer_user": 0.005,
+          "gpt4o_mini_post": 0.285,
+          "gpt4o_mini_user": 0.29,
+          "claude_haiku_post": 0.315,
+          "claude_haiku_user": 0.31
+        }
+      }
+    }
+  },
+  "user_level": {
+    "engines": {
+      "fewuser": {
+        "name": "fewuser",
+        "acc_at_1": 0.225,
+        "acc_at_5": 0.42,
+        "acc_at_1_ci": [
+          0.1726236971508913,
+          0.2877412323566053
+        ],
+        "acc_at_5_ci": [
+          0.35373599161616726,
+          0.4892792606041954
+        ],
+        "mean_rank": 4.345,
+        "median_error_km": 1396.6098887080655,
+        "mean_error_km": 4287.391060964085,
+        "acc_at_161km": 0.225,
+        "n_geo": 200,
+        "median_latency_ms": 112.6528155291453,
+        "total_cost_usd": 0.0,
+        "n_evaluated": 200
+      },
+      "retrievezero": {
+        "name": "retrievezero",
+        "acc_at_1": 0.22,
+        "acc_at_5": 0.455,
+        "acc_at_1_ci": [
+          0.16816538358833258,
+          0.28238799918293667
+        ],
+        "acc_at_5_ci": [
+          0.387482193098835,
+          0.524213886275119
+        ],
+        "mean_rank": 4.29,
+        "median_error_km": 1544.9949173440345,
+        "mean_error_km": 5292.290858681433,
+        "acc_at_161km": 0.29,
+        "n_geo": 200,
+        "median_latency_ms": 77.36539651523344,
+        "total_cost_usd": 0.0,
+        "n_evaluated": 200
+      },
+      "gazetteer_user": {
+        "name": "gazetteer_user",
+        "acc_at_1": 0.165,
+        "acc_at_5": 0.165,
+        "acc_at_1_ci": [
+          0.11996855328217308,
+          0.22265781539059548
+        ],
+        "acc_at_5_ci": [
+          0.11996855328217308,
+          0.22265781539059548
+        ],
+        "mean_rank": 5.175,
+        "median_error_km": 10847.85985439171,
+        "mean_error_km": 8037.903459552402,
+        "acc_at_161km": 0.175,
+        "n_geo": 200,
+        "median_latency_ms": 1.5373155183624476,
+        "total_cost_usd": 0.0,
+        "n_evaluated": 200
+      },
+      "gpt4o_mini_user": {
+        "name": "gpt4o_mini_user",
+        "acc_at_1": 0.57,
+        "acc_at_5": 0.79,
+        "acc_at_1_ci": [
+          0.5007048776415268,
+          0.6366567766656557
+        ],
+        "acc_at_5_ci": [
+          0.7283538314009755,
+          0.84071587930021
+        ],
+        "mean_rank": 2.565,
+        "median_error_km": 0.0,
+        "mean_error_km": 2014.0027265490603,
+        "acc_at_161km": 0.61,
+        "n_geo": 200,
+        "median_latency_ms": 1552.7119610051159,
+        "total_cost_usd": 0.0174852,
+        "n_evaluated": 200
+      },
+      "claude_haiku_user": {
+        "name": "claude_haiku_user",
+        "acc_at_1": 0.59,
+        "acc_at_5": 0.86,
+        "acc_at_1_ci": [
+          0.5207645903369208,
+          0.6558432509151711
+        ],
+        "acc_at_5_ci": [
+          0.8051011913429243,
+          0.9013301736654437
+        ],
+        "mean_rank": 2.235,
+        "median_error_km": 0.0,
+        "mean_error_km": 1342.8103151849168,
+        "acc_at_161km": 0.655,
+        "n_geo": 200,
+        "median_latency_ms": 1166.529863490723,
+        "total_cost_usd": 0.1293712,
+        "n_evaluated": 200
+      }
+    },
+    "ensemble": {
+      "granularity": "user",
+      "acc_at_1": 0.57,
+      "acc_at_5": 0.815,
+      "acc_at_1_ci": [
+        0.5007048776415268,
+        0.6366567766656557
+      ],
+      "mean_rank": 2.385,
+      "median_error_km": 0.0,
+      "acc_at_161km": 0.615,
+      "n_evaluated": 200,
+      "differs_from_best_single_rate": 0.04
+    }
+  },
+  "banner": {
+    "n_labelled": 737,
+    "n_positive": 200,
+    "true_positive": 153,
+    "false_positive": 133,
+    "false_negative": 47,
+    "precision": 0.534965034965035,
+    "recall": 0.765
+  },
+  "significance": {
+    "post_level": [
+      {
+        "a": "contrastgeo",
+        "b": "gazetteer_post",
+        "a_only_correct": 15,
+        "b_only_correct": 23,
+        "discordant": 38,
+        "stat": 1.289,
+        "p_value": 0.2561
+      },
+      {
+        "a": "contrastgeo",
+        "b": "gpt4o_mini_post",
+        "a_only_correct": 8,
+        "b_only_correct": 72,
+        "discordant": 80,
+        "stat": 49.612,
+        "p_value": 0.0
+      },
+      {
+        "a": "contrastgeo",
+        "b": "claude_haiku_post",
+        "a_only_correct": 7,
+        "b_only_correct": 77,
+        "discordant": 84,
+        "stat": 56.679,
+        "p_value": 0.0
+      },
+      {
+        "a": "gazetteer_post",
+        "b": "gpt4o_mini_post",
+        "a_only_correct": 0,
+        "b_only_correct": 56,
+        "discordant": 56,
+        "stat": 54.018,
+        "p_value": 0.0
+      },
+      {
+        "a": "gazetteer_post",
+        "b": "claude_haiku_post",
+        "a_only_correct": 1,
+        "b_only_correct": 63,
+        "discordant": 64,
+        "stat": 58.141,
+        "p_value": 0.0
+      },
+      {
+        "a": "gpt4o_mini_post",
+        "b": "claude_haiku_post",
+        "a_only_correct": 13,
+        "b_only_correct": 19,
+        "discordant": 32,
+        "stat": 0.781,
+        "p_value": 0.3768
+      }
+    ],
+    "user_level": [
+      {
+        "a": "fewuser",
+        "b": "retrievezero",
+        "a_only_correct": 21,
+        "b_only_correct": 20,
+        "discordant": 41,
+        "stat": 0.0,
+        "p_value": 1.0
+      },
+      {
+        "a": "fewuser",
+        "b": "gazetteer_user",
+        "a_only_correct": 28,
+        "b_only_correct": 16,
+        "discordant": 44,
+        "stat": 2.75,
+        "p_value": 0.0973
+      },
+      {
+        "a": "fewuser",
+        "b": "gpt4o_mini_user",
+        "a_only_correct": 8,
+        "b_only_correct": 77,
+        "discordant": 85,
+        "stat": 54.4,
+        "p_value": 0.0
+      },
+      {
+        "a": "fewuser",
+        "b": "claude_haiku_user",
+        "a_only_correct": 6,
+        "b_only_correct": 79,
+        "discordant": 85,
+        "stat": 60.988,
+        "p_value": 0.0
+      },
+      {
+        "a": "retrievezero",
+        "b": "gazetteer_user",
+        "a_only_correct": 17,
+        "b_only_correct": 6,
+        "discordant": 23,
+        "stat": 4.348,
+        "p_value": 0.0371
+      },
+      {
+        "a": "retrievezero",
+        "b": "gpt4o_mini_user",
+        "a_only_correct": 3,
+        "b_only_correct": 73,
+        "discordant": 76,
+        "stat": 62.645,
+        "p_value": 0.0
+      },
+      {
+        "a": "retrievezero",
+        "b": "claude_haiku_user",
+        "a_only_correct": 2,
+        "b_only_correct": 76,
+        "discordant": 78,
+        "stat": 68.321,
+        "p_value": 0.0
+      },
+      {
+        "a": "gazetteer_user",
+        "b": "gpt4o_mini_user",
+        "a_only_correct": 2,
+        "b_only_correct": 83,
+        "discordant": 85,
+        "stat": 75.294,
+        "p_value": 0.0
+      },
+      {
+        "a": "gazetteer_user",
+        "b": "claude_haiku_user",
+        "a_only_correct": 3,
+        "b_only_correct": 88,
+        "discordant": 91,
+        "stat": 77.538,
+        "p_value": 0.0
+      },
+      {
+        "a": "gpt4o_mini_user",
+        "b": "claude_haiku_user",
+        "a_only_correct": 17,
+        "b_only_correct": 21,
+        "discordant": 38,
+        "stat": 0.237,
+        "p_value": 0.6265
+      }
+    ]
+  }
+}

@@ -1,9 +1,14 @@
-"""Default candidate cities for stub mode.
+"""The built-in candidate catalogue: the 50 places every engine may answer with.
 
-These are not the final classnames; the real engines bake in their own
-catalogues at model init. This list keeps the UI working until weights are
-wired up. It is Singapore-heavy on purpose, for the estate-management
-scenario.
+This is the closed label set at every level. The gazetteer matches against
+these names, both classifiers are given them in the prompt and a reply naming
+anything else is dropped, and the encoders embed a string built from each one.
+A place onboarded at run time is appended to the live copy the server hands
+every engine, so a request's catalogue can be longer than this list.
+
+`_coords.py` holds each place's coordinate, scale and provenance. The first 22
+are the seed catalogue; the remaining 28 were added for the WNUT-2016
+evaluation.
 """
 
 DEFAULT_CITIES: list[str] = [

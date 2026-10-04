@@ -1,0 +1,64 @@
+{
+  "note": "Recomputed from the committed WNUT-2016 result files; no engine was run and no API was called.",
+  "excluded_bucket": {
+    "ooc": 150
+  },
+  "row_sets": [
+    {
+      "row_set": "user_timeline_400",
+      "selection_rule": "rows that carry a user timeline: the disagree and userhome buckets, which are the rows where a post-level and a user-level consensus both exist",
+      "buckets": [
+        "disagree",
+        "userhome"
+      ],
+      "source_file": "wnut2016_banner.json",
+      "source_generated_at": "2026-06-01T17:57:58+00:00",
+      "n_rows": 400,
+      "n_rows_from_id_manifest": 400,
+      "n_positive": 200,
+      "true_positive": 155,
+      "false_positive": 119,
+      "false_negative": 45,
+      "true_negative": 81,
+      "precision": 0.5656934306569343,
+      "precision_ci95": [
+        0.5064955494029127,
+        0.6230747463794483
+      ],
+      "recall": 0.775,
+      "recall_ci95": [
+        0.7122587676433947,
+        0.8273763028491087
+      ]
+    },
+    {
+      "row_set": "catalogued_737",
+      "selection_rule": "every row whose ground-truth city is in the catalogue: the whole 887-row run minus the 150 ooc rows, so the 337 post-only rows are scored as well",
+      "buckets": [
+        "intl",
+        "hard-sem",
+        "disagree",
+        "userhome"
+      ],
+      "source_file": "wnut2016.json",
+      "source_generated_at": "2026-06-01T17:13:49+00:00",
+      "n_rows": 737,
+      "n_rows_from_id_manifest": 737,
+      "n_positive": 200,
+      "true_positive": 153,
+      "false_positive": 133,
+      "false_negative": 47,
+      "true_negative": 404,
+      "precision": 0.534965034965035,
+      "precision_ci95": [
+        0.4770784082158704,
+        0.5919248326640781
+      ],
+      "recall": 0.765,
+      "recall_ci95": [
+        0.7015863111723746,
+        0.8184256658476741
+      ]
+    }
+  ]
+}

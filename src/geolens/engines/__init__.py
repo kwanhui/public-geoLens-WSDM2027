@@ -1,4 +1,4 @@
-"""Engine adapters wrapping three few-shot and zero-shot geolocation engines plus public baselines."""
+"""Engine adapters: three frozen-encoder engines plus the public baselines."""
 
 from geolens.engines.base import Engine, GeolocateInput, Prediction
 from geolens.engines.contrastgeo import ContrastGeoEngine

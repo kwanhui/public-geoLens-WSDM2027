@@ -1,5 +1,3 @@
-"""Tests for the two fusion methods, including RRF."""
-
 from __future__ import annotations
 
 from geolens.engines.base import Prediction
@@ -22,14 +20,14 @@ def test_weighted_can_be_dominated_by_large_scores():
     w = ensemble(per_engine, grans, target="post", method="weighted")
     r = ensemble(per_engine, grans, target="post", method="rrf")
     assert w.method == "weighted" and r.method == "rrf"
-    # The weighted sum follows A's large score to Tokyo,
+    # Weighted is dragged to Tokyo by A's inflated score...
     assert w.consensus_city == "Tokyo"
-    # while RRF, using only rank, follows the 2-of-3 majority for Singapore.
+    # ...but RRF, using only rank, follows the 2-of-3 majority for Singapore.
     assert r.consensus_city == "Singapore"
 
 
 def test_rrf_uses_rank_not_magnitude():
-    # Same ranking, very different score magnitudes -> identical RRF result.
+    # Same ranking, wildly different score magnitudes -> identical RRF result.
     small = {"a": _pred("Bangkok", 0.01, [("Bangkok", 0.01), ("Manila", 0.001)])}
     big = {"a": _pred("Bangkok", 999.0, [("Bangkok", 999.0), ("Manila", 1.0)])}
     grans = {"a": "post"}

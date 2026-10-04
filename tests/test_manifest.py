@@ -1,5 +1,3 @@
-"""Tests for the reproducibility run manifest."""
-
 from __future__ import annotations
 
 from geolens.manifest import build_manifest, catalogue_hash
@@ -36,3 +34,24 @@ def test_manifest_captures_models_and_params():
     }
     assert len(m["catalogue_sha"]) == 12
     assert m["generated_at"].endswith("+00:00")  # UTC, ISO-8601
+
+
+def test_the_openapi_document_and_the_manifest_report_the_same_version() -> None:
+    from starlette.testclient import TestClient
+
+    import geolens
+    from geolens.ui.server import create_app
+
+    with TestClient(create_app()) as client:
+        openapi = client.get("/openapi.json").json()["info"]["version"]
+        manifest = client.post("/geolocate", json={"post": "a post"}).json()["manifest"]
+    assert openapi == geolens.__version__ == manifest["version"]
+
+
+def test_pyproject_reads_the_version_from_the_package() -> None:
+    from pathlib import Path
+
+    pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text()
+    assert 'dynamic = ["version"]' in pyproject
+    assert 'version = { attr = "geolens.__version__" }' in pyproject
+    assert "\nversion = \"" not in pyproject

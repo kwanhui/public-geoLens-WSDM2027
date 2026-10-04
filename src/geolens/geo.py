@@ -1,10 +1,10 @@
 """Great-circle distance utilities for spatial evaluation.
 
-Geolocation work reports distance error, not just label accuracy, so a
-near-miss (Petaling Jaya for Kuala Lumpur, ~12 km) is not penalised the same
-as a far-miss (London for Singapore, ~10,000 km). The standard reference
-metrics are median/mean great-circle error and Acc@161km (accuracy within
-100 miles), following Eisenstein et al. (2010) and Han et al. (2014).
+Geolocation work reports distance error alongside label accuracy, so a
+near-miss (Petaling Jaya for Kuala Lumpur, ~12 km) is not penalised like a
+far-miss (London for Singapore, ~10,000 km). The reference metrics are
+median and mean great-circle error and Acc@161 km (accuracy within 100 miles),
+following Eisenstein et al. (2010) and Han et al. (2014).
 """
 
 from __future__ import annotations

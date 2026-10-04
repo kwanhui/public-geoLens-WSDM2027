@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the companion paper, which is under submission."
+title: "GeoLens: A Workbench for Comparing Zero-Shot Social Media Geolocation Engines"
+abstract: >
+  A web workbench that runs nine geolocation engine instances behind one
+  interface and one API over a closed catalogue of places, fuses them at the
+  post level and the user level, raises a verification flag when the two
+  consensus places are more than 161 km apart, onboards a new place from an
+  LLM-drafted editable profile, and scores every engine on a labelled CSV.
+authors:
+  - family-names: Lim
+    given-names: Kwan Hui
+    affiliation: "Singapore University of Social Sciences"
+  - family-names: Li
+    given-names: Menglin
+    affiliation: "Singapore Institute of Technology"
+  - family-names: Li
+    given-names: Kunrong
+    affiliation: "Singapore University of Technology and Design"
+  - family-names: Lee
+    given-names: Roy Ka-Wei
+    affiliation: "Singapore University of Technology and Design"
+  - family-names: Sun
+    given-names: Zhu
+    affiliation: "Singapore University of Technology and Design"
+type: software
+version: 0.14.5
+date-released: "2026-09-20"
+license: MIT
+repository-code: "https://github.com/kwanhui/public-geoLens-WSDM2027"
+preferred-citation:
+  type: unpublished
+  title: "GeoLens: A Workbench for Comparing Zero-Shot Social Media Geolocation Engines"
+  authors:
+    - family-names: Lim
+      given-names: Kwan Hui
+    - family-names: Li
+      given-names: Menglin
+    - family-names: Li
+      given-names: Kunrong
+    - family-names: Lee
+      given-names: Roy Ka-Wei
+    - family-names: Sun
+      given-names: Zhu
+  notes: "Submitted to the WSDM 2027 Demonstrations Track"
+  year: 2026

@@ -28,6 +28,11 @@ Thumbs.db
 logs/
 *.log
 
+# Demo build artifacts (large videos, screencasts)
+demo/*.mp4
+demo/*.mov
+demo/*.gif
+
 # WNUT-2016-derived evaluation sets: these contain rehydrated tweet text, and
 # Twitter/X terms allow redistributing tweet IDs only, not content. Regenerate
 # locally from your licensed WNUT copy with eval/adapters/wnut2016_to_geolens.py.
@@ -35,3 +40,6 @@ eval/wnut2016_*.csv
 # ...except the tweet-ID + label manifest, which is shareable and committed for reproducibility.
 !eval/wnut2016_id_manifest.csv
 # (eval/results/*.json hold aggregate metrics + run manifest only, no tweet text, so they are committed.)
+
+# The commit an image build bakes into the package.
+src/geolens/data/build_commit.txt

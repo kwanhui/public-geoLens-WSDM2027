@@ -1,5 +1,3 @@
-"""Disagreement-banner precision/recall and catalogue-size reporting."""
-
 from __future__ import annotations
 
 from geolens.batch.metrics import compute_summary
@@ -36,7 +34,7 @@ def test_banner_precision_recall() -> None:
     assert s.banner is not None
     b = s.banner
     assert (b.n_labelled, b.n_positive) == (4, 2)
-    assert (b.true_positive, b.false_positive, b.false_negative) == (1, 1, 1)
+    assert (b.true_positive, b.false_positive, b.false_negative, b.true_negative) == (1, 1, 1, 1)
     assert b.precision == 0.5
     assert b.recall == 0.5
 
@@ -75,3 +73,25 @@ def test_city_rollup_counts_per_bucket() -> None:
     top = rollup[0]
     assert top.city == "Tokyo"
     assert top.post_count == 2 and top.user_count == 1
+
+
+def test_the_banner_reports_how_many_rows_could_fire_at_all() -> None:
+    """A post-only row runs no user-level engine, so it can never fire."""
+    from geolens.batch import compute_summary
+    from geolens.batch.runner import BatchInput, run_batch
+    from geolens.engines.registry import build_engines
+
+    engines, catalogue = build_engines()
+    rows = [
+        BatchInput(id="post-only", post="Queue at the Bedok hawker centre",
+                   ground_truth_city="Bedok", should_disagree=False),
+        BatchInput(id="with-timeline", post="Marina Bay Sands in Singapore",
+                   user_posts=["Ramen in Tokyo", "Tokyo again"],
+                   ground_truth_city="Singapore", ground_truth_user_city="Tokyo",
+                   should_disagree=True),
+    ]
+    summary = compute_summary(run_batch(rows, engines, catalogue=catalogue, k=5))
+
+    assert summary.banner is not None
+    assert summary.banner.n_labelled == 2
+    assert summary.banner.n_with_timeline == 1

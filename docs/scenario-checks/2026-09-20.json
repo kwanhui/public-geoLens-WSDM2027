@@ -1,0 +1,1232 @@
+{
+  "generated_at": "2026-09-20T15:09:45+00:00",
+  "base_url": "https://kwanhui-geo-lens.hf.space",
+  "tool": {
+    "commit": "a61d5a8f850a0cd1f3ee7d104f9a0c197d55972a",
+    "dirty": false
+  },
+  "scenarios": [
+    {
+      "id": "estate-management",
+      "title": "Onboarding a new housing estate",
+      "onboard_city": "Bidadari Estate",
+      "region": "Singapore",
+      "checked_at": "2026-09-20T15:09:45+00:00",
+      "reset": {
+        "catalogue_status": "not_present",
+        "catalogue_note": "not onboarded on this instance, so there was nothing to remove",
+        "catalogue_size": 50,
+        "profile_removed": false,
+        "onboarded_count": 0,
+        "onboarded_cap": 20,
+        "onboarding_ttl_minutes": 60.0,
+        "expires_in_minutes": null,
+        "evicted": [],
+        "name": "Bidadari Estate",
+        "place_id": "pl_0ad8f4a15744"
+      },
+      "before_onboarding": {
+        "post": "Lift at blk 118 Bidadari stuck again, third time this week",
+        "user_posts": null,
+        "engines": {
+          "contrastgeo": {
+            "city": "Bedok",
+            "confidence": 0.0823,
+            "mode": "real",
+            "abstain": false,
+            "note": "real:contrastgeo (encoder-only baseline)"
+          },
+          "fewuser": {
+            "city": "",
+            "confidence": 0.0,
+            "mode": "skipped",
+            "abstain": false,
+            "note": "not run: fewuser (no user timeline supplied)"
+          },
+          "retrievezero": {
+            "city": "",
+            "confidence": 0.0,
+            "mode": "skipped",
+            "abstain": false,
+            "note": "not run: retrievezero (no user timeline supplied)"
+          },
+          "gazetteer_post": {
+            "city": "",
+            "confidence": 0.0,
+            "mode": "real",
+            "abstain": true,
+            "note": "real:gazetteer (no toponym in text)"
+          },
+          "gazetteer_user": {
+            "city": "",
+            "confidence": 0.0,
+            "mode": "skipped",
+            "abstain": false,
+            "note": "not run: gazetteer_user (no user timeline supplied)"
+          },
+          "gpt4o_mini_post": {
+            "city": "Singapore",
+            "confidence": 0.9,
+            "mode": "real",
+            "abstain": false,
+            "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+          },
+          "gpt4o_mini_user": {
+            "city": "",
+            "confidence": 0.0,
+            "mode": "skipped",
+            "abstain": false,
+            "note": "not run: gpt4o_mini_user (no user timeline supplied)"
+          },
+          "claude_haiku_post": {
+            "city": "Tampines",
+            "confidence": 0.45,
+            "mode": "real",
+            "abstain": false,
+            "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+          },
+          "claude_haiku_user": {
+            "city": "",
+            "confidence": 0.0,
+            "mode": "skipped",
+            "abstain": false,
+            "note": "not run: claude_haiku_user (no user timeline supplied)"
+          }
+        },
+        "engines_not_run": {
+          "fewuser": "no user timeline supplied",
+          "retrievezero": "no user timeline supplied",
+          "gazetteer_user": "no user timeline supplied",
+          "gpt4o_mini_user": "no user timeline supplied",
+          "claude_haiku_user": "no user timeline supplied"
+        },
+        "fusion": {
+          "post": {
+            "city": "Singapore",
+            "confidence": 0.2364,
+            "method": "weighted",
+            "engines": [
+              "contrastgeo",
+              "gpt4o_mini_post",
+              "claude_haiku_post"
+            ]
+          }
+        },
+        "flag": {
+          "raised": false,
+          "post_consensus": "Singapore",
+          "user_consensus": "",
+          "km": null,
+          "notes": []
+        }
+      },
+      "onboarded": {
+        "source": "openai",
+        "region": "Singapore",
+        "lat": 1.3191,
+        "lon": 103.8485,
+        "aliases": [],
+        "landmarks": [],
+        "catalogue_status": "added",
+        "catalogue_size": 51,
+        "warnings": [
+          "no aliases: the gazetteer will match only the full name, so a post that writes the place informally will not match",
+          "no landmarks: RetrieveZero builds its passage from the profile and the gazetteer matches landmarks, so neither has anything local to match"
+        ]
+      },
+      "after_operator_edits": {
+        "source": "edited",
+        "region": "Singapore",
+        "lat": 1.3396,
+        "lon": 103.872,
+        "aliases": [
+          "Bidadari",
+          "Bidadari Park Drive",
+          "Bidadari BTO"
+        ],
+        "landmarks": [
+          "Bidadari Park",
+          "Alkaff Lake",
+          "Woodleigh MRT"
+        ],
+        "catalogue_status": "already_present",
+        "catalogue_size": 51,
+        "warnings": []
+      },
+      "posts": [
+        {
+          "post": "Lift at blk 118 Bidadari stuck again, third time this week",
+          "user_posts": null,
+          "engines": {
+            "contrastgeo": {
+              "city": "Bidadari Estate",
+              "confidence": 0.0763,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:contrastgeo (encoder-only baseline)"
+            },
+            "fewuser": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: fewuser (no user timeline supplied)"
+            },
+            "retrievezero": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: retrievezero (no user timeline supplied)"
+            },
+            "gazetteer_post": {
+              "city": "Bidadari Estate",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gazetteer_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: gazetteer_user (no user timeline supplied)"
+            },
+            "gpt4o_mini_post": {
+              "city": "Bidadari Estate",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "gpt4o_mini_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: gpt4o_mini_user (no user timeline supplied)"
+            },
+            "claude_haiku_post": {
+              "city": "Bidadari Estate",
+              "confidence": 0.98,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            },
+            "claude_haiku_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: claude_haiku_user (no user timeline supplied)"
+            }
+          },
+          "engines_not_run": {
+            "fewuser": "no user timeline supplied",
+            "retrievezero": "no user timeline supplied",
+            "gazetteer_user": "no user timeline supplied",
+            "gpt4o_mini_user": "no user timeline supplied",
+            "claude_haiku_user": "no user timeline supplied"
+          },
+          "fusion": {
+            "post": {
+              "city": "Bidadari Estate",
+              "confidence": 0.5803,
+              "method": "weighted",
+              "engines": [
+                "contrastgeo",
+                "gazetteer_post",
+                "gpt4o_mini_post",
+                "claude_haiku_post"
+              ]
+            }
+          },
+          "flag": {
+            "raised": false,
+            "post_consensus": "Bidadari Estate",
+            "user_consensus": "",
+            "km": null,
+            "notes": []
+          }
+        },
+        {
+          "post": "Drain along Bidadari Park Drive overflowing after the morning downpour",
+          "user_posts": null,
+          "engines": {
+            "contrastgeo": {
+              "city": "Bidadari Estate",
+              "confidence": 0.2162,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:contrastgeo (encoder-only baseline)"
+            },
+            "fewuser": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: fewuser (no user timeline supplied)"
+            },
+            "retrievezero": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: retrievezero (no user timeline supplied)"
+            },
+            "gazetteer_post": {
+              "city": "Bidadari Estate",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gazetteer_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: gazetteer_user (no user timeline supplied)"
+            },
+            "gpt4o_mini_post": {
+              "city": "Bidadari Estate",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "gpt4o_mini_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: gpt4o_mini_user (no user timeline supplied)"
+            },
+            "claude_haiku_post": {
+              "city": "Bidadari Estate",
+              "confidence": 0.95,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            },
+            "claude_haiku_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: claude_haiku_user (no user timeline supplied)"
+            }
+          },
+          "engines_not_run": {
+            "fewuser": "no user timeline supplied",
+            "retrievezero": "no user timeline supplied",
+            "gazetteer_user": "no user timeline supplied",
+            "gpt4o_mini_user": "no user timeline supplied",
+            "claude_haiku_user": "no user timeline supplied"
+          },
+          "fusion": {
+            "post": {
+              "city": "Bidadari Estate",
+              "confidence": 0.5857,
+              "method": "weighted",
+              "engines": [
+                "contrastgeo",
+                "gazetteer_post",
+                "gpt4o_mini_post",
+                "claude_haiku_post"
+              ]
+            }
+          },
+          "flag": {
+            "raised": false,
+            "post_consensus": "Bidadari Estate",
+            "user_consensus": "",
+            "km": null,
+            "notes": []
+          }
+        },
+        {
+          "post": "Anyone else at Bidadari BTO getting no water pressure since last night?",
+          "user_posts": null,
+          "engines": {
+            "contrastgeo": {
+              "city": "Bidadari Estate",
+              "confidence": 0.118,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:contrastgeo (encoder-only baseline)"
+            },
+            "fewuser": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: fewuser (no user timeline supplied)"
+            },
+            "retrievezero": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: retrievezero (no user timeline supplied)"
+            },
+            "gazetteer_post": {
+              "city": "Bidadari Estate",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gazetteer_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: gazetteer_user (no user timeline supplied)"
+            },
+            "gpt4o_mini_post": {
+              "city": "Bidadari Estate",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "gpt4o_mini_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: gpt4o_mini_user (no user timeline supplied)"
+            },
+            "claude_haiku_post": {
+              "city": "Bidadari Estate",
+              "confidence": 0.99,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            },
+            "claude_haiku_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: claude_haiku_user (no user timeline supplied)"
+            }
+          },
+          "engines_not_run": {
+            "fewuser": "no user timeline supplied",
+            "retrievezero": "no user timeline supplied",
+            "gazetteer_user": "no user timeline supplied",
+            "gpt4o_mini_user": "no user timeline supplied",
+            "claude_haiku_user": "no user timeline supplied"
+          },
+          "fusion": {
+            "post": {
+              "city": "Bidadari Estate",
+              "confidence": 0.583,
+              "method": "weighted",
+              "engines": [
+                "contrastgeo",
+                "gazetteer_post",
+                "gpt4o_mini_post",
+                "claude_haiku_post"
+              ]
+            }
+          },
+          "flag": {
+            "raised": false,
+            "post_consensus": "Bidadari Estate",
+            "user_consensus": "",
+            "km": null,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "osint-credibility",
+      "title": "Checking a viral post",
+      "onboard_city": null,
+      "region": "",
+      "checked_at": "2026-09-20T15:09:59+00:00",
+      "posts": [
+        {
+          "post": "Massive fire at Marina Bay Sands! #Singapore #breaking",
+          "user_posts": null,
+          "engines": {
+            "contrastgeo": {
+              "city": "Jurong East",
+              "confidence": 0.0934,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:contrastgeo (encoder-only baseline)"
+            },
+            "fewuser": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: fewuser (no user timeline supplied)"
+            },
+            "retrievezero": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: retrievezero (no user timeline supplied)"
+            },
+            "gazetteer_post": {
+              "city": "Singapore",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gazetteer_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: gazetteer_user (no user timeline supplied)"
+            },
+            "gpt4o_mini_post": {
+              "city": "Singapore",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "gpt4o_mini_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: gpt4o_mini_user (no user timeline supplied)"
+            },
+            "claude_haiku_post": {
+              "city": "Singapore",
+              "confidence": 0.98,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            },
+            "claude_haiku_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: claude_haiku_user (no user timeline supplied)"
+            }
+          },
+          "engines_not_run": {
+            "fewuser": "no user timeline supplied",
+            "retrievezero": "no user timeline supplied",
+            "gazetteer_user": "no user timeline supplied",
+            "gpt4o_mini_user": "no user timeline supplied",
+            "claude_haiku_user": "no user timeline supplied"
+          },
+          "fusion": {
+            "post": {
+              "city": "Singapore",
+              "confidence": 0.8859,
+              "method": "weighted",
+              "engines": [
+                "contrastgeo",
+                "gazetteer_post",
+                "gpt4o_mini_post",
+                "claude_haiku_post"
+              ]
+            }
+          },
+          "flag": {
+            "raised": false,
+            "post_consensus": "Singapore",
+            "user_consensus": "",
+            "km": null,
+            "notes": []
+          }
+        },
+        {
+          "post": null,
+          "user_posts": [
+            "Best ramen in Shibuya tonight",
+            "Shinjuku always crowded these days",
+            "Got sake at a tiny bar in Asakusa"
+          ],
+          "engines": {
+            "contrastgeo": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: contrastgeo (no post supplied)"
+            },
+            "fewuser": {
+              "city": "Tokyo",
+              "confidence": 0.1499,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:fewuser (encoder-only baseline)"
+            },
+            "retrievezero": {
+              "city": "Tokyo",
+              "confidence": 0.0361,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:retrievezero (encoder-only baseline)"
+            },
+            "gazetteer_post": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: gazetteer_post (no post supplied)"
+            },
+            "gazetteer_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "real",
+              "abstain": true,
+              "note": "real:gazetteer (no toponym in text)"
+            },
+            "gpt4o_mini_post": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: gpt4o_mini_post (no post supplied)"
+            },
+            "gpt4o_mini_user": {
+              "city": "Tokyo",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "claude_haiku_post": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "skipped",
+              "abstain": false,
+              "note": "not run: claude_haiku_post (no post supplied)"
+            },
+            "claude_haiku_user": {
+              "city": "Tokyo",
+              "confidence": 0.95,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            }
+          },
+          "engines_not_run": {
+            "contrastgeo": "no post supplied",
+            "gazetteer_post": "no post supplied",
+            "gpt4o_mini_post": "no post supplied",
+            "claude_haiku_post": "no post supplied"
+          },
+          "fusion": {
+            "user": {
+              "city": "Tokyo",
+              "confidence": 0.8403,
+              "method": "weighted",
+              "engines": [
+                "fewuser",
+                "retrievezero",
+                "gpt4o_mini_user",
+                "claude_haiku_user"
+              ]
+            }
+          },
+          "flag": {
+            "raised": false,
+            "post_consensus": "",
+            "user_consensus": "Tokyo",
+            "km": null,
+            "notes": []
+          }
+        },
+        {
+          "post": "Massive fire at Marina Bay Sands! #Singapore #breaking",
+          "user_posts": [
+            "Best ramen in Shibuya tonight",
+            "Shinjuku always crowded these days",
+            "Got sake at a tiny bar in Asakusa"
+          ],
+          "engines": {
+            "contrastgeo": {
+              "city": "Jurong East",
+              "confidence": 0.0934,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:contrastgeo (encoder-only baseline)"
+            },
+            "fewuser": {
+              "city": "Tokyo",
+              "confidence": 0.1499,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:fewuser (encoder-only baseline)"
+            },
+            "retrievezero": {
+              "city": "Tokyo",
+              "confidence": 0.0361,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:retrievezero (encoder-only baseline)"
+            },
+            "gazetteer_post": {
+              "city": "Singapore",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gazetteer_user": {
+              "city": "",
+              "confidence": 0.0,
+              "mode": "real",
+              "abstain": true,
+              "note": "real:gazetteer (no toponym in text)"
+            },
+            "gpt4o_mini_post": {
+              "city": "Singapore",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "gpt4o_mini_user": {
+              "city": "Tokyo",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "claude_haiku_post": {
+              "city": "Singapore",
+              "confidence": 0.99,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            },
+            "claude_haiku_user": {
+              "city": "Tokyo",
+              "confidence": 0.95,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            }
+          },
+          "engines_not_run": {},
+          "fusion": {
+            "post": {
+              "city": "Singapore",
+              "confidence": 0.8862,
+              "method": "weighted",
+              "engines": [
+                "contrastgeo",
+                "gazetteer_post",
+                "gpt4o_mini_post",
+                "claude_haiku_post"
+              ]
+            },
+            "user": {
+              "city": "Tokyo",
+              "confidence": 0.8403,
+              "method": "weighted",
+              "engines": [
+                "fewuser",
+                "retrievezero",
+                "gpt4o_mini_user",
+                "claude_haiku_user"
+              ]
+            }
+          },
+          "flag": {
+            "raised": true,
+            "post_consensus": "Singapore",
+            "user_consensus": "Tokyo",
+            "km": 5311.231194878497,
+            "notes": [
+              "the post text points to Singapore and the account's timeline points to Tokyo, 5,311 km apart. This is a prompt to review the case, not a finding. The candidate causes are that one of the two predictions is wrong, which is the most common one, that the post is about another place, a travel post, a shared or compromised account, and a misleading geotag."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "crisis-response",
+      "title": "A flooded town outside the catalogue",
+      "onboard_city": "Sintang",
+      "region": "West Kalimantan, Indonesia",
+      "checked_at": "2026-09-20T15:10:27+00:00",
+      "reset": {
+        "catalogue_status": "not_present",
+        "catalogue_note": "not onboarded on this instance, so there was nothing to remove",
+        "catalogue_size": 51,
+        "profile_removed": false,
+        "onboarded_count": 1,
+        "onboarded_cap": 20,
+        "onboarding_ttl_minutes": 60.0,
+        "expires_in_minutes": null,
+        "evicted": [],
+        "name": "Sintang",
+        "place_id": "pl_dcf5e5543cdc"
+      },
+      "before_onboarding": {
+        "post": "Banjir masih tinggi di Sintang, jembatan sudah tidak bisa dilewati",
+        "user_posts": [
+          "Need help, families stranded in Sintang, water has not gone down for days",
+          "Air banjir di Sintang sudah masuk rumah, listrik mati sejak semalam"
+        ],
+        "engines": {
+          "contrastgeo": {
+            "city": "Denpasar",
+            "confidence": 0.1622,
+            "mode": "real",
+            "abstain": false,
+            "note": "real:contrastgeo (encoder-only baseline)"
+          },
+          "fewuser": {
+            "city": "Pekanbaru",
+            "confidence": 0.0713,
+            "mode": "real",
+            "abstain": false,
+            "note": "real:fewuser (encoder-only baseline)"
+          },
+          "retrievezero": {
+            "city": "Singapore",
+            "confidence": 0.0308,
+            "mode": "real",
+            "abstain": false,
+            "note": "real:retrievezero (encoder-only baseline)"
+          },
+          "gazetteer_post": {
+            "city": "",
+            "confidence": 0.0,
+            "mode": "real",
+            "abstain": true,
+            "note": "real:gazetteer (no toponym in text)"
+          },
+          "gazetteer_user": {
+            "city": "",
+            "confidence": 0.0,
+            "mode": "real",
+            "abstain": true,
+            "note": "real:gazetteer (no toponym in text)"
+          },
+          "gpt4o_mini_post": {
+            "city": "Jakarta",
+            "confidence": 0.7,
+            "mode": "real",
+            "abstain": false,
+            "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+          },
+          "gpt4o_mini_user": {
+            "city": "Jakarta",
+            "confidence": 0.7,
+            "mode": "real",
+            "abstain": false,
+            "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+          },
+          "claude_haiku_post": {
+            "city": "Pekanbaru",
+            "confidence": 0.45,
+            "mode": "real",
+            "abstain": false,
+            "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+          },
+          "claude_haiku_user": {
+            "city": "Pekanbaru",
+            "confidence": 0.45,
+            "mode": "real",
+            "abstain": false,
+            "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+          }
+        },
+        "engines_not_run": {},
+        "fusion": {
+          "post": {
+            "city": "Jakarta",
+            "confidence": 0.2948,
+            "method": "weighted",
+            "engines": [
+              "contrastgeo",
+              "gpt4o_mini_post",
+              "claude_haiku_post"
+            ]
+          },
+          "user": {
+            "city": "Jakarta",
+            "confidence": 0.3434,
+            "method": "weighted",
+            "engines": [
+              "fewuser",
+              "retrievezero",
+              "gpt4o_mini_user",
+              "claude_haiku_user"
+            ]
+          }
+        },
+        "flag": {
+          "raised": false,
+          "post_consensus": "Jakarta",
+          "user_consensus": "Jakarta",
+          "km": null,
+          "notes": []
+        }
+      },
+      "onboarded": {
+        "source": "openai",
+        "region": "West Kalimantan, Indonesia",
+        "lat": -0.0667,
+        "lon": 111.5333,
+        "aliases": [],
+        "landmarks": [],
+        "catalogue_status": "added",
+        "catalogue_size": 52,
+        "warnings": [
+          "no aliases: the gazetteer will match only the full name, so a post that writes the place informally will not match",
+          "no landmarks: RetrieveZero builds its passage from the profile and the gazetteer matches landmarks, so neither has anything local to match"
+        ]
+      },
+      "after_operator_edits": {
+        "source": "edited",
+        "region": "West Kalimantan, Indonesia",
+        "lat": 0.0681,
+        "lon": 111.4981,
+        "aliases": [
+          "Sintang",
+          "Kota Sintang",
+          "Kabupaten Sintang"
+        ],
+        "landmarks": [
+          "Sungai Kapuas",
+          "Sungai Melawi",
+          "Bukit Kelam"
+        ],
+        "catalogue_status": "already_present",
+        "catalogue_size": 52,
+        "warnings": []
+      },
+      "posts": [
+        {
+          "post": "Banjir masih tinggi di Sintang, jembatan sudah tidak bisa dilewati",
+          "user_posts": [
+            "Need help, families stranded in Sintang, water has not gone down for days",
+            "Air banjir di Sintang sudah masuk rumah, listrik mati sejak semalam"
+          ],
+          "engines": {
+            "contrastgeo": {
+              "city": "Denpasar",
+              "confidence": 0.1508,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:contrastgeo (encoder-only baseline)"
+            },
+            "fewuser": {
+              "city": "Pekanbaru",
+              "confidence": 0.0697,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:fewuser (encoder-only baseline)"
+            },
+            "retrievezero": {
+              "city": "Singapore",
+              "confidence": 0.0302,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:retrievezero (encoder-only baseline)"
+            },
+            "gazetteer_post": {
+              "city": "Sintang",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gazetteer_user": {
+              "city": "Sintang",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gpt4o_mini_post": {
+              "city": "Sintang",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "gpt4o_mini_user": {
+              "city": "Sintang",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "claude_haiku_post": {
+              "city": "Sintang",
+              "confidence": 0.95,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            },
+            "claude_haiku_user": {
+              "city": "Sintang",
+              "confidence": 0.95,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            }
+          },
+          "engines_not_run": {},
+          "fusion": {
+            "post": {
+              "city": "Sintang",
+              "confidence": 0.7764,
+              "method": "weighted",
+              "engines": [
+                "contrastgeo",
+                "gazetteer_post",
+                "gpt4o_mini_post",
+                "claude_haiku_post"
+              ]
+            },
+            "user": {
+              "city": "Sintang",
+              "confidence": 0.8464,
+              "method": "weighted",
+              "engines": [
+                "fewuser",
+                "retrievezero",
+                "gazetteer_user",
+                "gpt4o_mini_user",
+                "claude_haiku_user"
+              ]
+            }
+          },
+          "flag": {
+            "raised": false,
+            "post_consensus": "Sintang",
+            "user_consensus": "Sintang",
+            "km": null,
+            "notes": []
+          }
+        },
+        {
+          "post": "Need help, families stranded in Sintang, water has not gone down for days",
+          "user_posts": [
+            "Banjir masih tinggi di Sintang, jembatan sudah tidak bisa dilewati",
+            "Air banjir di Sintang sudah masuk rumah, listrik mati sejak semalam"
+          ],
+          "engines": {
+            "contrastgeo": {
+              "city": "Sintang",
+              "confidence": 0.0842,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:contrastgeo (encoder-only baseline)"
+            },
+            "fewuser": {
+              "city": "Pekanbaru",
+              "confidence": 0.0794,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:fewuser (encoder-only baseline)"
+            },
+            "retrievezero": {
+              "city": "Punggol",
+              "confidence": 0.0303,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:retrievezero (encoder-only baseline)"
+            },
+            "gazetteer_post": {
+              "city": "Sintang",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gazetteer_user": {
+              "city": "Sintang",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gpt4o_mini_post": {
+              "city": "Sintang",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "gpt4o_mini_user": {
+              "city": "Sintang",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "claude_haiku_post": {
+              "city": "Sintang",
+              "confidence": 0.95,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            },
+            "claude_haiku_user": {
+              "city": "Sintang",
+              "confidence": 0.99,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            }
+          },
+          "engines_not_run": {},
+          "fusion": {
+            "post": {
+              "city": "Sintang",
+              "confidence": 0.8551,
+              "method": "weighted",
+              "engines": [
+                "contrastgeo",
+                "gazetteer_post",
+                "gpt4o_mini_post",
+                "claude_haiku_post"
+              ]
+            },
+            "user": {
+              "city": "Sintang",
+              "confidence": 0.846,
+              "method": "weighted",
+              "engines": [
+                "fewuser",
+                "retrievezero",
+                "gazetteer_user",
+                "gpt4o_mini_user",
+                "claude_haiku_user"
+              ]
+            }
+          },
+          "flag": {
+            "raised": false,
+            "post_consensus": "Sintang",
+            "user_consensus": "Sintang",
+            "km": null,
+            "notes": []
+          }
+        },
+        {
+          "post": "Air banjir di Sintang sudah masuk rumah, listrik mati sejak semalam",
+          "user_posts": [
+            "Banjir masih tinggi di Sintang, jembatan sudah tidak bisa dilewati",
+            "Need help, families stranded in Sintang, water has not gone down for days"
+          ],
+          "engines": {
+            "contrastgeo": {
+              "city": "Denpasar",
+              "confidence": 0.174,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:contrastgeo (encoder-only baseline)"
+            },
+            "fewuser": {
+              "city": "Pekanbaru",
+              "confidence": 0.1026,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:fewuser (encoder-only baseline)"
+            },
+            "retrievezero": {
+              "city": "Bandung",
+              "confidence": 0.0293,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:retrievezero (encoder-only baseline)"
+            },
+            "gazetteer_post": {
+              "city": "Sintang",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gazetteer_user": {
+              "city": "Sintang",
+              "confidence": 1.0,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:gazetteer"
+            },
+            "gpt4o_mini_post": {
+              "city": "Sintang",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "gpt4o_mini_user": {
+              "city": "Sintang",
+              "confidence": 0.9,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_gpt4o_mini (gpt-4o-mini)"
+            },
+            "claude_haiku_post": {
+              "city": "Sintang",
+              "confidence": 0.95,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            },
+            "claude_haiku_user": {
+              "city": "Sintang",
+              "confidence": 0.98,
+              "mode": "real",
+              "abstain": false,
+              "note": "real:llm_claude_haiku (claude-haiku-4-5-20251001)"
+            }
+          },
+          "engines_not_run": {},
+          "fusion": {
+            "post": {
+              "city": "Sintang",
+              "confidence": 0.8034,
+              "method": "weighted",
+              "engines": [
+                "contrastgeo",
+                "gazetteer_post",
+                "gpt4o_mini_post",
+                "claude_haiku_post"
+              ]
+            },
+            "user": {
+              "city": "Sintang",
+              "confidence": 0.8191,
+              "method": "weighted",
+              "engines": [
+                "fewuser",
+                "retrievezero",
+                "gazetteer_user",
+                "gpt4o_mini_user",
+                "claude_haiku_user"
+              ]
+            }
+          },
+          "flag": {
+            "raised": false,
+            "post_consensus": "Sintang",
+            "user_consensus": "Sintang",
+            "km": null,
+            "notes": []
+          }
+        }
+      ]
+    }
+  ]
+}

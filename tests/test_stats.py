@@ -1,5 +1,3 @@
-"""Tests for Wilson intervals and the catalogue-size surfacing."""
-
 from __future__ import annotations
 
 from geolens.batch.metrics import compute_summary
@@ -11,7 +9,7 @@ from geolens.stats import wilson_interval
 def test_wilson_brackets_point_estimate():
     low, high = wilson_interval(45, 48)  # ~0.94
     assert 0.0 <= low < 45 / 48 < high <= 1.0
-    # A small-n interval is wide.
+    # Small-n interval should be visibly wide.
     assert (high - low) > 0.08
 
 
