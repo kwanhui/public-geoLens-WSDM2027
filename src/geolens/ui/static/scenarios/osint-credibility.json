@@ -1,12 +1,34 @@
 {
   "id": "osint-credibility",
-  "title": "OSINT Credibility Check",
-  "audience": "Journalist or platform-safety analyst verifying a viral post",
-  "headline": "Triangulation surfaces credibility signals no single engine can catch.",
+  "title": "Checking a viral post",
+  "subtitle": "Is this post from where its account usually is?",
+  "task": "verify",
+  "lang": "en",
+  "headline": "The post and the account point at places far apart, which raises the verification flag.",
   "engine_focus": "triangulator",
   "onboard_city": null,
   "comparison_default": true,
   "posts": [
+    {
+      "post": "Massive fire at Marina Bay Sands! #Singapore #breaking",
+      "user_posts": null,
+      "task": "post",
+      "step": "the post on its own",
+      "stage": "The post alone: the post-level engines place it.",
+      "delay_ms": 0
+    },
+    {
+      "post": null,
+      "user_posts": [
+        "Best ramen in Shibuya tonight",
+        "Shinjuku always crowded these days",
+        "Got sake at a tiny bar in Asakusa"
+      ],
+      "task": "user",
+      "step": "the account's recent posts",
+      "stage": "The account alone: the user-level engines place it.",
+      "delay_ms": 3500
+    },
     {
       "post": "Massive fire at Marina Bay Sands! #Singapore #breaking",
       "user_posts": [
@@ -14,7 +36,11 @@
         "Shinjuku always crowded these days",
         "Got sake at a tiny bar in Asakusa"
       ],
-      "delay_ms": 0
+      "task": "verify",
+      "step": "the post against its account",
+      "stage": "Both together: the two levels are compared.",
+      "stage_flagged": "Both together: the two levels disagree, so the flag is raised.",
+      "delay_ms": 7000
     }
   ]
 }

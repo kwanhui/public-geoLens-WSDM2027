@@ -4,37 +4,56 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geolens"
-version = "0.1.0"
-description = "GeoLens: unified workbench for few-shot and zero-shot social media geolocation."
+dynamic = ["version"]
+description = "GeoLens: a workbench for comparing zero-shot social media geolocation engines."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
     { name = "Kwan Hui Lim" },
+    { name = "Menglin Li" },
+    { name = "Kunrong Li" },
+    { name = "Roy Ka-Wei Lee" },
+    { name = "Zhu Sun" },
 ]
+# Every range is capped at the next major above the version the tested
+# environment resolves. The Space rebuilds its image from this file and
+# resolves the newest version each time, so a wide range is an unattended
+# live upgrade: in August 2026 `anthropic` crossed into 1.x,
+# which had dropped an argument the Claude adapter passed, and every Claude
+# request on the Space fell back to a stub. `requirements-lock.txt` records
+# what the tested environment actually holds.
 dependencies = [
-    "fastapi>=0.111",
-    "uvicorn[standard]>=0.30",
-    "pydantic>=2.7",
-    "python-multipart>=0.0.9",
-    "openai>=1.30",
-    "anthropic>=0.39",
-    "python-dotenv>=1.0",
+    "fastapi>=0.111,<1",
+    "uvicorn[standard]>=0.30,<1",
+    "pydantic>=2.7,<3",
+    "python-multipart>=0.0.9,<0.1",
+    # 3.x is what the venv resolves; the old <4 also allowed 1.x and 2.x.
+    "openai>=3.0,<4",
+    # 1.x is what the adapter targets; see tests/test_llm_claude.py.
+    "anthropic>=1.0,<2",
+    "python-dotenv>=1.0,<2",
 ]
 
 [project.optional-dependencies]
 # Real engine inference. Skipped by default so the demo runs in stub mode
 # on a cold HF Space without model downloads.
 real = [
-    "torch>=2.2",
-    "transformers>=4.40",
-    "sentence-transformers>=2.7",
+    "torch>=2.2,<3",
+    "transformers>=4.40,<6",
+    "sentence-transformers>=2.7,<7",
 ]
 dev = [
-    "pytest>=8.0",
-    "ruff>=0.4",
-    "mypy>=1.10",
-    "pre-commit>=3.7",
+    "pytest>=9.0,<10",
+    # scripts/capture_ui.py drives the UI with Playwright and trims the
+    # captured panels with Pillow. Both are figure tooling, not runtime deps.
+    "playwright>=1.44,<2",
+    "pillow>=12.0,<13",
+    # Ruff can add rules within a minor, so a new release may fail `make lint`
+    # even though nothing in the source changed.
+    "ruff>=0.16,<1",
+    "mypy>=2.0,<3",
+    "pre-commit>=3.7,<5",
 ]
 
 [project.scripts]
@@ -44,8 +63,27 @@ geolens = "geolens.cli:main"
 Homepage = "https://github.com/kwanhui/public-geoLens-WSDM2027"
 Issues = "https://github.com/kwanhui/public-geoLens-WSDM2027/issues"
 
+[tool.setuptools.dynamic]
+# One source of truth: src/geolens/__init__.py. The OpenAPI document said
+# 0.1.0 while the run manifest said 0.8.0, because the two read different
+# places.
+version = { attr = "geolens.__version__" }
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+# The page, its vendored Leaflet copy, the scenario files with their recorded
+# runs and the flag's reference numbers are served at runtime, so a
+# non-editable install has to carry them.
+geolens = [
+    "data/*.json",
+    "ui/static/*",
+    "ui/static/scenarios/*",
+    "ui/static/scenarios/records/*",
+    "ui/static/vendor/leaflet/*",
+    "ui/static/vendor/leaflet/images/*",
+]
 
 [tool.ruff]
 line-length = 100
@@ -54,6 +92,11 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "SIM"]
 ignore = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI declares request parsing in the argument defaults; these calls return
+# marker objects, not shared mutable state, so B008 does not apply to them.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Form", "fastapi.Query"]
 
 [tool.mypy]
 python_version = "3.10"

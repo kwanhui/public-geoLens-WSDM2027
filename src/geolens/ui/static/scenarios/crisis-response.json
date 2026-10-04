@@ -1,25 +1,51 @@
 {
   "id": "crisis-response",
-  "title": "Crisis Response",
-  "audience": "Humanitarian crisis monitor watching disaster posts in low-resource regions",
-  "headline": "Zero-shot LLM-retrieved knowledge handles cities outside the training set.",
+  "title": "A flooded town outside the catalogue",
+  "subtitle": "Flood posts in two languages from a town not yet onboarded",
+  "task": "verify",
+  "lang": "id",
+  "headline": "A town outside the catalogue becomes a candidate, and its name and the aliases the operator adds are what the engines match on.",
   "engine_focus": "retrievezero",
-  "onboard_city": "Pekanbaru",
+  "onboard_city": "Sintang",
+  "region": "West Kalimantan, Indonesia",
   "comparison_default": false,
+  "operator_edits": {
+    "aliases": [
+      "Sintang",
+      "Kota Sintang",
+      "Kabupaten Sintang"
+    ],
+    "lat": 0.0681,
+    "lon": 111.4981,
+    "landmarks": [
+      "Sungai Kapuas",
+      "Sungai Melawi",
+      "Bukit Kelam"
+    ]
+  },
   "posts": [
     {
-      "post": "Banjir besar di tengah Pekanbaru, jalan ditutup semua",
-      "user_posts": null,
+      "post": "Banjir masih tinggi di Sintang, jembatan sudah tidak bisa dilewati",
+      "user_posts": [
+        "Need help, families stranded in Sintang, water has not gone down for days",
+        "Air banjir di Sintang sudah masuk rumah, listrik mati sejak semalam"
+      ],
       "delay_ms": 0
     },
     {
-      "post": "Need help — rescue boats in central Pekanbaru area, water rising fast",
-      "user_posts": null,
+      "post": "Need help, families stranded in Sintang, water has not gone down for days",
+      "user_posts": [
+        "Banjir masih tinggi di Sintang, jembatan sudah tidak bisa dilewati",
+        "Air banjir di Sintang sudah masuk rumah, listrik mati sejak semalam"
+      ],
       "delay_ms": 3500
     },
     {
-      "post": "Pekanbaru floodwater up to my knee outside the masjid",
-      "user_posts": null,
+      "post": "Air banjir di Sintang sudah masuk rumah, listrik mati sejak semalam",
+      "user_posts": [
+        "Banjir masih tinggi di Sintang, jembatan sudah tidak bisa dilewati",
+        "Need help, families stranded in Sintang, water has not gone down for days"
+      ],
       "delay_ms": 7000
     }
   ]

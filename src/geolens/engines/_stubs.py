@@ -1,9 +1,8 @@
 """Deterministic stub predictions used when GEOLENS_STUB_MODE=1.
 
-Stub output is seeded by (engine_name, input_text) so the same input always
-returns the same prediction. We add small, engine-specific perturbations so
-the triangulator surfaces realistic agreement and disagreement cases instead
-of three identical answers.
+Output is seeded by (engine_name, input_text), with small engine-specific
+perturbations so the triangulator sees a mix of agreement and disagreement
+rather than identical answers.
 """
 
 from __future__ import annotations
@@ -58,7 +57,7 @@ def stub_predict(
         for i in range(len(cities))
     ]
     probs = _softmax([s * 6 for s in raw_scores])
-    ranked = sorted(zip(cities, probs), key=lambda x: x[1], reverse=True)
+    ranked = sorted(zip(cities, probs, strict=True), key=lambda x: x[1], reverse=True)
     top = ranked[:k]
 
     # Cheap delay so the UI can show realistic timings without burning CPU.

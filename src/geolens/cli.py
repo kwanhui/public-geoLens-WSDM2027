@@ -9,29 +9,28 @@ import json
 import os
 import sys
 
-from geolens.engines import (
-    ClaudeClassifierEngine,
-    ContrastGeoEngine,
-    FewUserEngine,
-    GazetteerEngine,
-    LLMClassifierEngine,
-    RetrieveZeroEngine,
-)
-from geolens.engines._cities import DEFAULT_CITIES
-from geolens.engines.base import GeolocateInput
+from geolens.dispatch import run_engines
+from geolens.engines.base import Engine, GeolocateInput
+from geolens.engines.registry import build_engines
+from geolens.geo import ACC_KM_THRESHOLD
 from geolens.onboarding import onboard_city
 from geolens.triangulator import triangulate
 
 
+def _cli_engines() -> tuple[dict[str, Engine], list[str]]:
+    """The same roster the server runs.
+
+    `geolens.engines.registry` is the one roster, so the CLI and the server
+    cannot report different numbers for the same input.
+    """
+    return build_engines()
+
+
 def _cmd_geolocate(args: argparse.Namespace) -> int:
     payload = GeolocateInput(post=args.post, user_handle=args.user_handle, user_posts=args.user_posts)
-    engines = {
-        "contrastgeo": ContrastGeoEngine(),
-        "fewuser": FewUserEngine(),
-        "retrievezero": RetrieveZeroEngine(),
-    }
+    engines, _ = _cli_engines()
     granularities = {n: e.granularity for n, e in engines.items()}
-    per_engine = {n: e.predict(payload, k=args.k) for n, e in engines.items()}
+    per_engine = run_engines(engines, payload, k=args.k)
     tri = triangulate(per_engine, engines=granularities)
 
     out = {
@@ -58,7 +57,7 @@ def _cmd_geolocate(args: argparse.Namespace) -> int:
 
 
 def _cmd_onboard(args: argparse.Namespace) -> int:
-    profile = onboard_city(args.city, force_refresh=args.refresh)
+    profile = onboard_city(args.city, region=args.region, force_refresh=args.refresh)
     json.dump(profile.__dict__, sys.stdout, indent=2, ensure_ascii=False)
     sys.stdout.write("\n")
     return 0
@@ -88,6 +87,9 @@ def _read_eval_csv(path: str) -> list:
                     user_posts=([s.strip() for s in up.split("|") if s.strip()] or None),
                     user_handle=((row.get("user_handle") or "").strip() or None),
                     ground_truth_city=((row.get("ground_truth_city") or "").strip() or None),
+                    ground_truth_user_city=(
+                        (row.get("ground_truth_user_city") or "").strip() or None
+                    ),
                     bucket=((row.get("bucket") or row.get("tag") or "").strip() or None),
                     should_disagree=_parse_bool(row.get("should_disagree")),
                 )
@@ -107,27 +109,33 @@ def _cmd_eval(args: argparse.Namespace) -> int:
 
     from geolens.batch.metrics import compute_summary
     from geolens.batch.runner import run_batch
-    from geolens.manifest import build_manifest
+    from geolens.manifest import build_manifest, call_counts
 
-    catalogue = list(DEFAULT_CITIES)
-    engines = {
-        "contrastgeo": ContrastGeoEngine(cities=catalogue),
-        "fewuser": FewUserEngine(cities=catalogue),
-        "retrievezero": RetrieveZeroEngine(cities=catalogue),
-        "gazetteer_post": GazetteerEngine(granularity="post", cities=catalogue),
-        "gazetteer_user": GazetteerEngine(granularity="user", cities=catalogue),
-        "gpt4o_mini_post": LLMClassifierEngine(granularity="post", cities=catalogue),
-        "gpt4o_mini_user": LLMClassifierEngine(granularity="user", cities=catalogue),
-        "claude_haiku_post": ClaudeClassifierEngine(granularity="post", cities=catalogue),
-        "claude_haiku_user": ClaudeClassifierEngine(granularity="user", cities=catalogue),
-    }
+    engines, catalogue = _cli_engines()
 
     inputs = _read_eval_csv(args.csv)
     if args.limit:
         inputs = inputs[: args.limit]
-    batch = run_batch(inputs, engines, catalogue=catalogue, k=args.k, ensemble_method=args.ensemble_method)
-    summary = compute_summary(batch, catalogue_size=len(catalogue))
-    manifest = build_manifest(engines, catalogue, k=args.k, ensemble_method=args.ensemble_method)
+    batch = run_batch(
+        inputs,
+        engines,
+        catalogue=catalogue,
+        k=args.k,
+        ensemble_method=args.ensemble_method,
+        flag_radius_km=args.flag_radius_km,
+    )
+    granularities = {n: e.granularity for n, e in engines.items()}
+    summary = compute_summary(
+        batch, catalogue_size=len(catalogue), granularities=granularities
+    )
+    manifest = build_manifest(
+        engines,
+        catalogue,
+        k=args.k,
+        ensemble_method=args.ensemble_method,
+        flag_radius_km=args.flag_radius_km,
+        counts=call_counts([r.per_engine for r in batch if r.per_engine]),
+    )
 
     out = {"manifest": manifest, "summary": dataclasses.asdict(summary)}
     text = json.dumps(out, indent=2, ensure_ascii=False)
@@ -155,6 +163,9 @@ def main(argv: list[str] | None = None) -> int:
 
     o = sub.add_parser("onboard", help="Generate a Modular Retrieval profile for a new city.")
     o.add_argument("--city", required=True)
+    o.add_argument("--region", default="",
+                   help="Country or region the place is in, e.g. 'Singapore'. Steers the "
+                        "drafting prompt and is checked against the drafted coordinate.")
     o.add_argument("--refresh", action="store_true", help="Bypass cache.")
     o.set_defaults(func=_cmd_onboard)
 
@@ -162,6 +173,9 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("csv", help="Path to a CSV (id, post, user_posts, ground_truth_city[, bucket, should_disagree]).")
     e.add_argument("-k", type=int, default=5, help="Top-k cities per engine.")
     e.add_argument("--ensemble-method", default="weighted", choices=["weighted", "rrf"])
+    e.add_argument("--flag-radius-km", type=float, default=ACC_KM_THRESHOLD,
+                   help="Separation at which the verification flag is raised "
+                        f"(default {ACC_KM_THRESHOLD:.0f} km, the reported value).")
     e.add_argument("--stub", action="store_true", help="Force all engines into offline stub mode.")
     e.add_argument("--limit", type=int, default=0, help="Evaluate only the first N rows (0 = all).")
     e.add_argument("--out", default=None, help="Write the JSON summary+manifest to this path (default: stdout).")

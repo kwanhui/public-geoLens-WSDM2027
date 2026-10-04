@@ -1,5 +1,3 @@
-"""Tests for per-difficulty stratified metrics."""
-
 from __future__ import annotations
 
 from geolens.batch.metrics import bucket_of, compute_summary

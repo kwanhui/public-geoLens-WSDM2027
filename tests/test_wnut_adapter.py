@@ -1,7 +1,7 @@
-"""Tests for the WNUT-2016 -> GeoLens eval adapter.
+"""The WNUT-2016 to GeoLens adapter.
 
-These exercise the label-mapping and bucketing logic on tiny synthetic records,
-so they need neither the real (multi-GB) dataset nor network access.
+The label-mapping and bucketing logic runs on tiny synthetic records, so
+neither the real multi-GB dataset nor network access is needed.
 """
 
 from __future__ import annotations

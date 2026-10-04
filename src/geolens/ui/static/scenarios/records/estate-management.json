@@ -1,0 +1,1215 @@
+{
+  "scenario_id": "estate-management",
+  "title": "Onboarding a new housing estate",
+  "source_file": "2026-09-20.json",
+  "recorded_at": "2026-09-20T15:09:45+00:00",
+  "base_url": "https://kwanhui-geo-lens.hf.space",
+  "commit": "a61d5a8f850a0cd1f3ee7d104f9a0c197d55972a",
+  "scenario": {
+    "id": "estate-management",
+    "title": "Onboarding a new housing estate",
+    "subtitle": "Lift faults on an estate the catalogue lacks",
+    "task": "post",
+    "headline": "A place the catalogue does not hold becomes a candidate that every engine can pick.",
+    "lang": "en",
+    "engine_focus": "contrastgeo",
+    "onboard_city": "Bidadari Estate",
+    "comparison_default": false
+  },
+  "instance": {
+    "engines": {
+      "contrastgeo": {
+        "label": "ContrastGeo",
+        "family": "contrastgeo",
+        "granularity": "post",
+        "tag": "frozen encoder",
+        "tag_title": "Hosted instantiation of the published method with a frozen off-the-shelf encoder. No support examples are used, and there is no way to supply any. It embeds the bare place name (SimCSE BERT-large).",
+        "calls_a_third_party": false
+      },
+      "fewuser": {
+        "label": "FewUser",
+        "family": "fewuser",
+        "granularity": "user",
+        "tag": "frozen encoder",
+        "tag_title": "Hosted instantiation of the published method with a frozen off-the-shelf encoder. No support examples are used, and there is no way to supply any. It embeds the template 'a social media user from <name>' (SimCSE RoBERTa-large).",
+        "calls_a_third_party": false
+      },
+      "retrievezero": {
+        "label": "RetrieveZero",
+        "family": "retrievezero",
+        "granularity": "user",
+        "tag": "frozen encoder",
+        "tag_title": "Hosted instantiation of the published method with a frozen off-the-shelf encoder. No support examples are used, and there is no way to supply any. It embeds a passage built from the place's drafted profile (E5-large) when there is one, which there is only for an onboarded place; for every built-in place it embeds the bare name. It is the one engine an onboarded profile reaches.",
+        "calls_a_third_party": false
+      },
+      "gazetteer_post": {
+        "label": "Gazetteer (post)",
+        "family": "gazetteer",
+        "granularity": "post",
+        "tag": "string match",
+        "tag_title": "Counts occurrences of each place name and its aliases in the text.",
+        "calls_a_third_party": false
+      },
+      "gazetteer_user": {
+        "label": "Gazetteer (user)",
+        "family": "gazetteer",
+        "granularity": "user",
+        "tag": "string match",
+        "tag_title": "Counts occurrences of each place name and its aliases in the timeline.",
+        "calls_a_third_party": false
+      },
+      "gpt4o_mini_post": {
+        "label": "GPT-4o-mini (post)",
+        "family": "gpt",
+        "granularity": "post",
+        "tag": "prompted LLM",
+        "tag_title": "Picks one place from the catalogue, which is listed in the prompt.",
+        "calls_a_third_party": true
+      },
+      "gpt4o_mini_user": {
+        "label": "GPT-4o-mini (user)",
+        "family": "gpt",
+        "granularity": "user",
+        "tag": "prompted LLM",
+        "tag_title": "Picks one place from the catalogue, which is listed in the prompt.",
+        "calls_a_third_party": true
+      },
+      "claude_haiku_post": {
+        "label": "Claude Haiku (post)",
+        "family": "claude",
+        "granularity": "post",
+        "tag": "prompted LLM",
+        "tag_title": "Picks one place from the catalogue, which is listed in the prompt.",
+        "calls_a_third_party": true
+      },
+      "claude_haiku_user": {
+        "label": "Claude Haiku (user)",
+        "family": "claude",
+        "granularity": "user",
+        "tag": "prompted LLM",
+        "tag_title": "Picks one place from the catalogue, which is listed in the prompt.",
+        "calls_a_third_party": true
+      }
+    },
+    "local_engines": [
+      "contrastgeo",
+      "fewuser",
+      "retrievezero",
+      "gazetteer_post",
+      "gazetteer_user"
+    ],
+    "require_region": false,
+    "max_post_chars": 2000,
+    "max_timeline_chars": 20000,
+    "flag_radius_km_default": 161.0,
+    "flag_reference": {
+      "row_set": "user_timeline_400",
+      "n_rows": 400,
+      "n_positive": 200,
+      "false_alarm_rate": 0.595,
+      "precision": 0.5656934306569343,
+      "recall": 0.775,
+      "positives_share": 0.5,
+      "sentence": "On WNUT-2016, 60% of accounts whose post and home agreed were also flagged; treat a flag as a reason to look."
+    },
+    "engine_reference": {
+      "tag": "wnut2016-eval-3803853",
+      "provenance": "WNUT-2016 validation tweets, English, 50-place catalogue, tag wnut2016-eval-3803853.",
+      "split_labels": {
+        "named": "the post named a catalogue place",
+        "unnamed": "the post named no catalogue place"
+      },
+      "catalogue_size": 50,
+      "engines": {
+        "contrastgeo": {
+          "granularity": "post",
+          "overall": {
+            "acc_at_1": 0.34421364985163205,
+            "acc_at_1_ci": [
+              0.2954998167626459,
+              0.3964390677753494
+            ],
+            "n": 337
+          },
+          "named": {
+            "acc_at_1": 0.7518248175182481,
+            "acc_at_1_ci": [
+              0.6732884840527308,
+              0.8166240784679699
+            ],
+            "n": 137
+          },
+          "unnamed": {
+            "acc_at_1": 0.065,
+            "acc_at_1_ci": [
+              0.03837635464915298,
+              0.10801907929906894
+            ],
+            "n": 200
+          }
+        },
+        "gazetteer_post": {
+          "granularity": "post",
+          "overall": {
+            "acc_at_1": 0.36795252225519287,
+            "acc_at_1_ci": [
+              0.3182223613900341,
+              0.4206591693136
+            ],
+            "n": 337
+          },
+          "named": {
+            "acc_at_1": 0.8978102189781022,
+            "acc_at_1_ci": [
+              0.8357726741747268,
+              0.93814717096667
+            ],
+            "n": 137
+          },
+          "unnamed": {
+            "acc_at_1": 0.005,
+            "acc_at_1_ci": [
+              0.0008831687156009805,
+              0.02777370439789293
+            ],
+            "n": 200
+          }
+        },
+        "gpt4o_mini_post": {
+          "granularity": "post",
+          "overall": {
+            "acc_at_1": 0.5341246290801187,
+            "acc_at_1_ci": [
+              0.48078105887884703,
+              0.5866989949842588
+            ],
+            "n": 337
+          },
+          "named": {
+            "acc_at_1": 0.8978102189781022,
+            "acc_at_1_ci": [
+              0.8357726741747268,
+              0.93814717096667
+            ],
+            "n": 137
+          },
+          "unnamed": {
+            "acc_at_1": 0.285,
+            "acc_at_1_ci": [
+              0.2269500300461729,
+              0.35115346029605166
+            ],
+            "n": 200
+          }
+        },
+        "claude_haiku_post": {
+          "granularity": "post",
+          "overall": {
+            "acc_at_1": 0.5519287833827893,
+            "acc_at_1_ci": [
+              0.4985459883973443,
+              0.6041410500899905
+            ],
+            "n": 337
+          },
+          "named": {
+            "acc_at_1": 0.8978102189781022,
+            "acc_at_1_ci": [
+              0.8357726741747268,
+              0.93814717096667
+            ],
+            "n": 137
+          },
+          "unnamed": {
+            "acc_at_1": 0.315,
+            "acc_at_1_ci": [
+              0.2546232099022851,
+              0.38234956085730354
+            ],
+            "n": 200
+          }
+        },
+        "fewuser": {
+          "granularity": "user",
+          "overall": {
+            "acc_at_1": 0.225,
+            "acc_at_1_ci": [
+              0.1726236971508913,
+              0.2877412323566053
+            ],
+            "n": 200
+          }
+        },
+        "retrievezero": {
+          "granularity": "user",
+          "overall": {
+            "acc_at_1": 0.22,
+            "acc_at_1_ci": [
+              0.16816538358833258,
+              0.28238799918293667
+            ],
+            "n": 200
+          }
+        },
+        "gazetteer_user": {
+          "granularity": "user",
+          "overall": {
+            "acc_at_1": 0.165,
+            "acc_at_1_ci": [
+              0.11996855328217308,
+              0.22265781539059548
+            ],
+            "n": 200
+          }
+        },
+        "gpt4o_mini_user": {
+          "granularity": "user",
+          "overall": {
+            "acc_at_1": 0.57,
+            "acc_at_1_ci": [
+              0.5007048776415268,
+              0.6366567766656557
+            ],
+            "n": 200
+          }
+        },
+        "claude_haiku_user": {
+          "granularity": "user",
+          "overall": {
+            "acc_at_1": 0.59,
+            "acc_at_1_ci": [
+              0.5207645903369208,
+              0.6558432509151711
+            ],
+            "n": 200
+          }
+        }
+      }
+    },
+    "limits": {},
+    "spend": {
+      "ceiling_reached": false,
+      "reason": ""
+    }
+  },
+  "steps": [
+    {
+      "name": "Bidadari Estate before onboarding",
+      "stage": "Before onboarding: Bidadari Estate is not a candidate.",
+      "stage_note": "No engine can return it.",
+      "post": "Lift at blk 118 Bidadari stuck again, third time this week",
+      "user_posts": null,
+      "result": {
+        "per_engine": {
+          "contrastgeo": {
+            "city": "Bedok",
+            "confidence": 0.0823,
+            "top_k": [
+              [
+                "Bedok",
+                0.0823
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "fewuser": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "retrievezero": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "gazetteer_post": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": true,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "gazetteer_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "gpt4o_mini_post": {
+            "city": "Singapore",
+            "confidence": 0.9,
+            "top_k": [
+              [
+                "Singapore",
+                0.9
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "gpt4o_mini_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "claude_haiku_post": {
+            "city": "Tampines",
+            "confidence": 0.45,
+            "top_k": [
+              [
+                "Tampines",
+                0.45
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "claude_haiku_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          }
+        },
+        "ensembles": {
+          "post": {
+            "consensus_city": "Singapore",
+            "consensus_confidence": 0.2364,
+            "method": "weighted",
+            "contributing_engines": [
+              "contrastgeo",
+              "gpt4o_mini_post",
+              "claude_haiku_post"
+            ],
+            "best_single_engine": "",
+            "best_single_city": "",
+            "differs_from_best_single": false
+          }
+        },
+        "triangulation": {
+          "disagreement_flag": false,
+          "disagreement_km": null,
+          "disagreement_score": 0.0,
+          "post_consensus_city": "Singapore",
+          "user_consensus_city": "",
+          "post_consensus_votes": 1,
+          "post_consensus_answered": 3,
+          "user_consensus_votes": 0,
+          "user_consensus_answered": 0,
+          "notes": []
+        },
+        "manifest": {
+          "k": 5,
+          "ensemble_method": "weighted",
+          "flag_radius_km": 161.0,
+          "engines": {
+            "contrastgeo": {},
+            "fewuser": {},
+            "retrievezero": {},
+            "gazetteer_post": {},
+            "gazetteer_user": {},
+            "gpt4o_mini_post": {},
+            "gpt4o_mini_user": {},
+            "claude_haiku_post": {},
+            "claude_haiku_user": {}
+          },
+          "selected_engines": [
+            "contrastgeo",
+            "fewuser",
+            "retrievezero",
+            "gazetteer_post",
+            "gazetteer_user",
+            "gpt4o_mini_post",
+            "gpt4o_mini_user",
+            "claude_haiku_post",
+            "claude_haiku_user"
+          ]
+        }
+      },
+      "place_coordinates": {
+        "Bedok": [
+          1.3236,
+          103.9273
+        ],
+        "Singapore": [
+          1.3521,
+          103.8198
+        ],
+        "Tampines": [
+          1.3496,
+          103.9568
+        ]
+      }
+    },
+    {
+      "name": "the drafted profile and its warnings",
+      "stage": "The drafted profile for Bidadari Estate comes back from openai. The panel warns: no aliases: the gazetteer will match only the full name, so a post that writes the place informally will not match; no landmarks: RetrieveZero builds its passage from the profile and the gazetteer matches landmarks, so neither has anything local to match."
+    },
+    {
+      "name": "the operator's edits",
+      "stage": "The operator sets aliases Bidadari, Bidadari Park Drive, Bidadari BTO; landmarks Bidadari Park, Alkaff Lake, Woodleigh MRT; centroid 1.3396, 103.872, and saves Bidadari Estate."
+    },
+    {
+      "name": "post 1 of 3",
+      "stage": "After onboarding: post 1 of 3, with Bidadari Estate a candidate.",
+      "task": "post",
+      "post": "Lift at blk 118 Bidadari stuck again, third time this week",
+      "user_posts": null,
+      "result": {
+        "per_engine": {
+          "contrastgeo": {
+            "city": "Bidadari Estate",
+            "confidence": 0.0763,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                0.0763
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "fewuser": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "retrievezero": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "gazetteer_post": {
+            "city": "Bidadari Estate",
+            "confidence": 1.0,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                1.0
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "gazetteer_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "gpt4o_mini_post": {
+            "city": "Bidadari Estate",
+            "confidence": 0.9,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                0.9
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "gpt4o_mini_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "claude_haiku_post": {
+            "city": "Bidadari Estate",
+            "confidence": 0.98,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                0.98
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "claude_haiku_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          }
+        },
+        "ensembles": {
+          "post": {
+            "consensus_city": "Bidadari Estate",
+            "consensus_confidence": 0.5803,
+            "method": "weighted",
+            "contributing_engines": [
+              "contrastgeo",
+              "gazetteer_post",
+              "gpt4o_mini_post",
+              "claude_haiku_post"
+            ],
+            "best_single_engine": "",
+            "best_single_city": "",
+            "differs_from_best_single": false
+          }
+        },
+        "triangulation": {
+          "disagreement_flag": false,
+          "disagreement_km": null,
+          "disagreement_score": 0.0,
+          "post_consensus_city": "Bidadari Estate",
+          "user_consensus_city": "",
+          "post_consensus_votes": 4,
+          "post_consensus_answered": 4,
+          "user_consensus_votes": 0,
+          "user_consensus_answered": 0,
+          "notes": []
+        },
+        "manifest": {
+          "k": 5,
+          "ensemble_method": "weighted",
+          "flag_radius_km": 161.0,
+          "engines": {
+            "contrastgeo": {},
+            "fewuser": {},
+            "retrievezero": {},
+            "gazetteer_post": {},
+            "gazetteer_user": {},
+            "gpt4o_mini_post": {},
+            "gpt4o_mini_user": {},
+            "claude_haiku_post": {},
+            "claude_haiku_user": {}
+          },
+          "selected_engines": [
+            "contrastgeo",
+            "fewuser",
+            "retrievezero",
+            "gazetteer_post",
+            "gazetteer_user",
+            "gpt4o_mini_post",
+            "gpt4o_mini_user",
+            "claude_haiku_post",
+            "claude_haiku_user"
+          ]
+        }
+      },
+      "place_coordinates": {
+        "Bidadari Estate": [
+          1.3396,
+          103.872
+        ]
+      }
+    },
+    {
+      "name": "post 2 of 3",
+      "stage": "After onboarding: post 2 of 3, with Bidadari Estate a candidate.",
+      "task": "post",
+      "post": "Drain along Bidadari Park Drive overflowing after the morning downpour",
+      "user_posts": null,
+      "result": {
+        "per_engine": {
+          "contrastgeo": {
+            "city": "Bidadari Estate",
+            "confidence": 0.2162,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                0.2162
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "fewuser": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "retrievezero": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "gazetteer_post": {
+            "city": "Bidadari Estate",
+            "confidence": 1.0,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                1.0
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "gazetteer_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "gpt4o_mini_post": {
+            "city": "Bidadari Estate",
+            "confidence": 0.9,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                0.9
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "gpt4o_mini_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "claude_haiku_post": {
+            "city": "Bidadari Estate",
+            "confidence": 0.95,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                0.95
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "claude_haiku_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          }
+        },
+        "ensembles": {
+          "post": {
+            "consensus_city": "Bidadari Estate",
+            "consensus_confidence": 0.5857,
+            "method": "weighted",
+            "contributing_engines": [
+              "contrastgeo",
+              "gazetteer_post",
+              "gpt4o_mini_post",
+              "claude_haiku_post"
+            ],
+            "best_single_engine": "",
+            "best_single_city": "",
+            "differs_from_best_single": false
+          }
+        },
+        "triangulation": {
+          "disagreement_flag": false,
+          "disagreement_km": null,
+          "disagreement_score": 0.0,
+          "post_consensus_city": "Bidadari Estate",
+          "user_consensus_city": "",
+          "post_consensus_votes": 4,
+          "post_consensus_answered": 4,
+          "user_consensus_votes": 0,
+          "user_consensus_answered": 0,
+          "notes": []
+        },
+        "manifest": {
+          "k": 5,
+          "ensemble_method": "weighted",
+          "flag_radius_km": 161.0,
+          "engines": {
+            "contrastgeo": {},
+            "fewuser": {},
+            "retrievezero": {},
+            "gazetteer_post": {},
+            "gazetteer_user": {},
+            "gpt4o_mini_post": {},
+            "gpt4o_mini_user": {},
+            "claude_haiku_post": {},
+            "claude_haiku_user": {}
+          },
+          "selected_engines": [
+            "contrastgeo",
+            "fewuser",
+            "retrievezero",
+            "gazetteer_post",
+            "gazetteer_user",
+            "gpt4o_mini_post",
+            "gpt4o_mini_user",
+            "claude_haiku_post",
+            "claude_haiku_user"
+          ]
+        }
+      },
+      "place_coordinates": {
+        "Bidadari Estate": [
+          1.3396,
+          103.872
+        ]
+      }
+    },
+    {
+      "name": "post 3 of 3",
+      "stage": "After onboarding: post 3 of 3, with Bidadari Estate a candidate.",
+      "task": "post",
+      "post": "Anyone else at Bidadari BTO getting no water pressure since last night?",
+      "user_posts": null,
+      "result": {
+        "per_engine": {
+          "contrastgeo": {
+            "city": "Bidadari Estate",
+            "confidence": 0.118,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                0.118
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "fewuser": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "retrievezero": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "gazetteer_post": {
+            "city": "Bidadari Estate",
+            "confidence": 1.0,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                1.0
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "gazetteer_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "gpt4o_mini_post": {
+            "city": "Bidadari Estate",
+            "confidence": 0.9,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                0.9
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "gpt4o_mini_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          },
+          "claude_haiku_post": {
+            "city": "Bidadari Estate",
+            "confidence": 0.99,
+            "top_k": [
+              [
+                "Bidadari Estate",
+                0.99
+              ]
+            ],
+            "latency_ms": null,
+            "mode": "real",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": false,
+            "reason": ""
+          },
+          "claude_haiku_user": {
+            "city": "",
+            "confidence": 0.0,
+            "top_k": [],
+            "latency_ms": null,
+            "mode": "skipped",
+            "abstain": false,
+            "evidence": "",
+            "note": "",
+            "failed": false,
+            "error_class": "",
+            "outcome": "",
+            "skipped": true,
+            "reason": "no user timeline supplied"
+          }
+        },
+        "ensembles": {
+          "post": {
+            "consensus_city": "Bidadari Estate",
+            "consensus_confidence": 0.583,
+            "method": "weighted",
+            "contributing_engines": [
+              "contrastgeo",
+              "gazetteer_post",
+              "gpt4o_mini_post",
+              "claude_haiku_post"
+            ],
+            "best_single_engine": "",
+            "best_single_city": "",
+            "differs_from_best_single": false
+          }
+        },
+        "triangulation": {
+          "disagreement_flag": false,
+          "disagreement_km": null,
+          "disagreement_score": 0.0,
+          "post_consensus_city": "Bidadari Estate",
+          "user_consensus_city": "",
+          "post_consensus_votes": 4,
+          "post_consensus_answered": 4,
+          "user_consensus_votes": 0,
+          "user_consensus_answered": 0,
+          "notes": []
+        },
+        "manifest": {
+          "k": 5,
+          "ensemble_method": "weighted",
+          "flag_radius_km": 161.0,
+          "engines": {
+            "contrastgeo": {},
+            "fewuser": {},
+            "retrievezero": {},
+            "gazetteer_post": {},
+            "gazetteer_user": {},
+            "gpt4o_mini_post": {},
+            "gpt4o_mini_user": {},
+            "claude_haiku_post": {},
+            "claude_haiku_user": {}
+          },
+          "selected_engines": [
+            "contrastgeo",
+            "fewuser",
+            "retrievezero",
+            "gazetteer_post",
+            "gazetteer_user",
+            "gpt4o_mini_post",
+            "gpt4o_mini_user",
+            "claude_haiku_post",
+            "claude_haiku_user"
+          ]
+        }
+      },
+      "place_coordinates": {
+        "Bidadari Estate": [
+          1.3396,
+          103.872
+        ]
+      }
+    }
+  ]
+}

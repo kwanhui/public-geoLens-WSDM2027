@@ -1,24 +1,41 @@
 {
   "id": "estate-management",
-  "title": "Estate Management",
-  "audience": "Incident-monitoring analyst at a municipal agency (illustrative)",
-  "headline": "From zero labelled data to operational classification in under a minute, no retraining.",
+  "title": "Onboarding a new housing estate",
+  "subtitle": "Lift faults on an estate the catalogue lacks",
+  "task": "post",
+  "lang": "en",
+  "headline": "A place the catalogue does not hold becomes a candidate that every engine can pick.",
   "engine_focus": "contrastgeo",
-  "onboard_city": "Tengah Plantation Crescent",
+  "onboard_city": "Bidadari Estate",
+  "region": "Singapore",
   "comparison_default": false,
+  "operator_edits": {
+    "aliases": [
+      "Bidadari",
+      "Bidadari Park Drive",
+      "Bidadari BTO"
+    ],
+    "lat": 1.3396,
+    "lon": 103.872,
+    "landmarks": [
+      "Bidadari Park",
+      "Alkaff Lake",
+      "Woodleigh MRT"
+    ]
+  },
   "posts": [
     {
-      "post": "Streetlight outside blk 105 Tengah dead for 3 days now",
+      "post": "Lift at blk 118 Bidadari stuck again, third time this week",
       "user_posts": null,
       "delay_ms": 0
     },
     {
-      "post": "Flooding near Tengah Park playground after the morning rain",
+      "post": "Drain along Bidadari Park Drive overflowing after the morning downpour",
       "user_posts": null,
       "delay_ms": 3500
     },
     {
-      "post": "Anyone else's mailbox at Tengah BTO not locking properly?",
+      "post": "Anyone else at Bidadari BTO getting no water pressure since last night?",
       "user_posts": null,
       "delay_ms": 7000
     }

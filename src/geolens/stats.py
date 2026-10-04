@@ -1,9 +1,7 @@
-"""Small statistics helpers for honest reporting on small evaluation sets.
+"""Small statistics helpers for reporting on small evaluation sets.
 
-The bundled case-study set has ~48 evaluable rows, so point accuracies carry
-wide uncertainty. We report Wilson score intervals (better than the normal
-approximation at small n and near 0/1) so a reader does not over-read a gap
-between two engines that is within sampling noise.
+The bundled case-study set has about 48 evaluable rows. Wilson score intervals
+beat the normal approximation at small n and near 0 or 1.
 """
 
 from __future__ import annotations
@@ -33,3 +31,20 @@ def wilson_interval(successes: int, n: int, z: float = Z_95) -> tuple[float, flo
     low = 0.0 if successes <= 0 else max(0.0, low)
     high = 1.0 if successes >= n else min(1.0, high)
     return low, high
+
+
+def mcnemar(a_only_correct: int, b_only_correct: int) -> tuple[float, float]:
+    """Continuity-corrected McNemar test on a pair of engines.
+
+    The two arguments are the discordant counts: rows only engine A got right,
+    and rows only engine B got right. Concordant rows carry no information
+    about which engine is better and do not enter the test. Returns the
+    chi-square statistic with one degree of freedom and its two-sided p-value;
+    with no discordant rows there is nothing to test, so p is 1.
+    """
+    discordant = a_only_correct + b_only_correct
+    if discordant == 0:
+        return 0.0, 1.0
+    stat = (abs(a_only_correct - b_only_correct) - 1) ** 2 / discordant
+    # Survival function of chi-square with 1 dof.
+    return stat, math.erfc(math.sqrt(stat / 2.0))

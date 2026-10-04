@@ -1,5 +1,3 @@
-"""Tests for Wilson intervals and the catalogue-size surfacing."""
-
 from __future__ import annotations
 
 from geolens.batch.metrics import compute_summary

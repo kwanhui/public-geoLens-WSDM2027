@@ -1,5 +1,3 @@
-"""Tests for the spatial-distance evaluation metrics."""
-
 from __future__ import annotations
 
 from geolens.batch.metrics import compute_summary

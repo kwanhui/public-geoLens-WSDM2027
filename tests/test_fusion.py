@@ -1,5 +1,3 @@
-"""Tests for the two fusion methods, including RRF."""
-
 from __future__ import annotations
 
 from geolens.engines.base import Prediction

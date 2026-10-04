@@ -1,45 +1,40 @@
 """Frozen-encoder cosine-similarity baseline shared by all three engines.
 
-This is the natural zero-shot starting point each engine paper improves upon
-(via contrastive fine-tuning, prompt engineering, LLM-retrieved knowledge).
-No trained checkpoints are available, so this is what the "real" mode runs,
-and it fits on a HF Space CPU tier. It is a proper baseline, not a stub.
+No trained checkpoint ships with this workbench, so the frozen encoder is what
+runs on a CPU tier. One query is served in four steps: the encoder and its
+tokenizer load on the first call and are cached for the process; city
+embeddings are computed once per (encoder, city-set, description function)
+tuple and written under <cache root>/city_embeddings/ (see `geolens.paths`);
+the query text is encoded with mean pooling over the last hidden state; cosine
+similarity against the cached embeddings is softmaxed and cut to top-k.
 
-How it works for one query:
-1. Lazy-load the encoder + tokenizer on first call (cached for the process).
-2. Pre-compute city embeddings once per (encoder, city-set, description-fn)
-   tuple, cache to disk under ~/.geolens/city_embeddings/.
-3. Encode the query text with mean-pooling over the encoder's last hidden state.
-4. Cosine similarity vs. cached city embeddings → softmax → top-k.
-
-The Prediction returned has `note="real:<engine>"` so downstream code (and
-anyone reading the API responses) can tell stub from real.
+The Prediction carries `note="real:<engine>"`, so a caller can tell a real
+answer from a placeholder.
 """
 
 from __future__ import annotations
 
 import hashlib
 import logging
-import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Callable
+from typing import Any
+
+from geolens.paths import CITY_EMBEDDINGS, cache_subdir
 
 logger = logging.getLogger(__name__)
-
-CACHE_DIR = Path(os.getenv("GEOLENS_CACHE_DIR", str(Path.home() / ".geolens"))) / "city_embeddings"
 
 
 @dataclass
 class _LoadedModel:
-    tokenizer: object
-    model: object
+    tokenizer: Any
+    model: Any
     device: str
 
 
 _MODEL_CACHE: dict[str, _LoadedModel] = {}
-_CITY_EMB_CACHE: dict[str, "torch.Tensor"] = {}  # type: ignore[name-defined]  # noqa: F821
+_CITY_EMB_CACHE: dict[str, Any] = {}  # city-set key -> torch.Tensor
 
 
 def _load_encoder(model_name: str) -> _LoadedModel:
@@ -58,12 +53,12 @@ def _load_encoder(model_name: str) -> _LoadedModel:
     return bundle
 
 
-def _mean_pool(last_hidden: "torch.Tensor", attention_mask: "torch.Tensor"):  # type: ignore[name-defined]  # noqa: F821
+def _mean_pool(last_hidden: Any, attention_mask: Any) -> Any:
     mask = attention_mask.unsqueeze(-1).float()
     return (last_hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)
 
 
-def _embed_texts(model_name: str, texts: list[str], max_length: int = 256):  # noqa: F821
+def _embed_texts(model_name: str, texts: list[str], max_length: int = 256) -> Any:
     """Return an L2-normalized embedding tensor for `texts`, shape (N, hidden)."""
     import torch
 
@@ -93,7 +88,7 @@ def _city_embeddings(
     cities: list[str],
     describe: Callable[[str], str],
     description_fn_id: str,
-):
+) -> Any:
     """Return cached city embeddings (encoder-specific, set-specific)."""
     import torch
 
@@ -101,8 +96,7 @@ def _city_embeddings(
     if key in _CITY_EMB_CACHE:
         return _CITY_EMB_CACHE[key]
 
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    disk_path = CACHE_DIR / f"{key}.pt"
+    disk_path = cache_subdir(CITY_EMBEDDINGS, create=True) / f"{key}.pt"
     if disk_path.exists():
         embs = torch.load(disk_path, weights_only=True)
         _CITY_EMB_CACHE[key] = embs
@@ -125,7 +119,7 @@ def encoder_similarity_predict(
     describe_city: Callable[[str], str],
     description_fn_id: str,
     k: int = 5,
-):
+) -> Any:
     """Run the frozen-encoder cosine-similarity baseline and return a Prediction."""
     import torch
 
@@ -137,7 +131,10 @@ def encoder_similarity_predict(
     sims = (query_emb @ city_embs.T).squeeze(0)  # cosine, since both normalized
     probs = torch.softmax(sims * 10, dim=0)  # temperature 0.1 sharpens softly
     top = torch.topk(probs, k=min(k, len(cities)))
-    top_k = [(cities[i.item()], float(p.item())) for p, i in zip(top.values, top.indices)]
+    top_k = [
+        (cities[i.item()], float(p.item()))
+        for p, i in zip(top.values, top.indices, strict=True)
+    ]
     latency_ms = (time.perf_counter() - start) * 1000
 
     return Prediction(

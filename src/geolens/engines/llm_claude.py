@@ -1,26 +1,45 @@
 """LLM-as-classifier adapter using Anthropic Claude Haiku 4.5.
 
-Same prompt and contract as the OpenAI variant in `llm_classifier.py`. Having
-two different LLM classifiers in the workbench lets the ensemble see whether
-two model families agree, which says more than the
-agreement of one LLM with itself across temperatures.
-
-Falls back to stub if `ANTHROPIC_API_KEY` is unset or the SDK is missing.
+Same prompt and contract as the OpenAI variant in `llm_classifier.py`. Without
+`ANTHROPIC_API_KEY`, or when the SDK is missing, the adapter returns a
+placeholder.
 """
 
 from __future__ import annotations
 
-import json
 import logging
+import os
 import time
 
 from geolens.engines._cities import DEFAULT_CITIES
+from geolens.engines._reply_json import extract_json_object, parse_confidence
 from geolens.engines._stubs import stub_predict
-from geolens.engines.base import Engine, GeolocateInput, Prediction
+from geolens.engines.base import (
+    Engine,
+    GeolocateInput,
+    Prediction,
+    failed_prediction,
+    no_catalogue_place_prediction,
+)
+from geolens.pricing import estimate_cost
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+API_KEY_ENV = "ANTHROPIC_API_KEY"
+
+# What the call below actually sends. Anthropic's 1.x SDK removed the
+# sampling parameters from Messages.create, so none is sent and the run
+# manifest says so rather than naming a temperature.
+MAX_TOKENS = 400
+SAMPLING_PARAMETERS: dict[str, object] = {
+    "max_tokens": MAX_TOKENS,
+    "temperature": None,
+    "note": (
+        "no sampling parameter is sent: the anthropic 1.x Messages API rejects "
+        "temperature, top_p and top_k, so the model's default sampling applies"
+    ),
+}
 
 
 def _build_prompt(query_text: str, cities: list[str], k: int) -> str:
@@ -41,6 +60,8 @@ def _build_prompt(query_text: str, cities: list[str], k: int) -> str:
 class ClaudeClassifierEngine(Engine):
     name = "llm_claude_haiku"
     granularity = "post"
+    sampling_parameters = SAMPLING_PARAMETERS
+    calls_a_third_party = True
 
     def __init__(
         self,
@@ -68,36 +89,54 @@ class ClaudeClassifierEngine(Engine):
 
         text = self._query_text(payload)
         if not text:
-            return stub_predict(self.name, payload, k, sleep_ms=10.0, note=f"stub: {self.name} (no input)")
+            return failed_prediction(
+                self.name, error_class="NoInput", detail="no text for this granularity"
+            )
 
         try:
             from anthropic import Anthropic
+            from anthropic.types import TextBlock
         except ImportError as e:
-            logger.warning("anthropic not installed (%s); falling back to stub.", e)
+            logger.warning("anthropic not installed (%s); falling back to a placeholder.", e)
             return stub_predict(self.name, payload, k, sleep_ms=10.0, note=f"stub: {self.name} (no anthropic)")
 
         start = time.perf_counter()
-        client = Anthropic()
         try:
+            client = Anthropic()
+            # anthropic SDK 1.x removed the sampling parameters (temperature/top_p/
+            # top_k) from Messages.create, and current models reject them API-side;
+            # the classifier therefore runs at the model's default sampling.
             resp = client.messages.create(
                 model=self.model,
-                max_tokens=400,
-                temperature=0.0,
+                max_tokens=MAX_TOKENS,
                 messages=[{"role": "user", "content": _build_prompt(text, self.cities, k)}],
             )
-            content = resp.content[0].text if resp.content else "{}"
-            # Claude sometimes wraps JSON in fences despite "no prose"; strip them.
-            content = content.strip()
-            if content.startswith("```"):
-                content = content.strip("`")
-                if content.lower().startswith("json"):
-                    content = content[4:].lstrip()
-            data = json.loads(content)
-            raw_top_k = data.get("top_k", [])
-            cost_usd = _estimate_cost(self.model, resp.usage.input_tokens, resp.usage.output_tokens)
         except Exception as e:  # noqa: BLE001
-            logger.warning("Claude classifier (%s) failed: %s", self.model, e)
-            return stub_predict(self.name, payload, k, sleep_ms=10.0, note=f"stub: {self.name} (api error)")
+            elapsed = (time.perf_counter() - start) * 1000
+            if not os.getenv(API_KEY_ENV):
+                # An instance with no key is not configured for live inference,
+                # which is the keyless placeholder mode, not a failure.
+                return stub_predict(
+                    self.name, payload, k, sleep_ms=10.0, note=f"stub: {self.name} (no api key)"
+                )
+            logger.warning("Claude classifier (%s) call failed: %s", self.model, e)
+            return failed_prediction(
+                self.name, error_class=type(e).__name__, latency_ms=elapsed
+            )
+
+        try:
+            texts = [b.text for b in resp.content if isinstance(b, TextBlock)]
+            data = extract_json_object(texts[0] if texts else "")
+            raw_top_k = data.get("top_k", [])
+            estimated = estimate_cost(
+                self.model, resp.usage.input_tokens, resp.usage.output_tokens
+            )
+        except Exception as e:  # noqa: BLE001
+            elapsed = (time.perf_counter() - start) * 1000
+            logger.warning("Claude classifier (%s) reply could not be read: %s", self.model, e)
+            return failed_prediction(
+                self.name, error_class=type(e).__name__, latency_ms=elapsed
+            )
 
         latency_ms = (time.perf_counter() - start) * 1000
 
@@ -111,29 +150,19 @@ class ClaudeClassifierEngine(Engine):
                 city_canonical = valid_cities.get(str(city_raw).lower())
                 if city_canonical is None:
                     continue
-                top_k.append((city_canonical, float(conf)))
+                top_k.append((city_canonical, parse_confidence(conf)))
             except (TypeError, ValueError):
                 continue
 
         if not top_k:
-            return stub_predict(self.name, payload, k, sleep_ms=10.0, note=f"stub: {self.name} (parse error)")
+            return no_catalogue_place_prediction(self.name, latency_ms=latency_ms)
 
         return Prediction(
             city=top_k[0][0],
             confidence=top_k[0][1],
             top_k=top_k,
             latency_ms=latency_ms,
-            cost_usd=cost_usd,
+            cost_usd=estimated or 0.0,
+            cost_is_estimated=estimated is not None,
             note=f"real:{self.name} ({self.model})",
         )
-
-
-def _estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
-    """Rough cost estimator for Anthropic models (2026 prices)."""
-    # claude-haiku-4-5: ~$0.80/MTok input, ~$4.00/MTok output (verify against billing)
-    rates = {
-        "claude-haiku-4-5-20251001": (0.80e-6, 4.00e-6),
-        "claude-sonnet-4-6": (3.00e-6, 15.00e-6),
-    }
-    in_rate, out_rate = rates.get(model, (0.80e-6, 4.00e-6))
-    return input_tokens * in_rate + output_tokens * out_rate

@@ -1,52 +1,23 @@
 #!/usr/bin/env python3
-"""Convert the WNUT-2016 Twitter geolocation validation set into a GeoLens
-bulk-eval CSV with geotag-derived (distant-supervision) labels.
+"""Convert the WNUT-2016 geolocation validation set into a GeoLens eval CSV.
 
-Why this exists
----------------
-The bundled ``example_test_set.csv`` is hand-authored: each post was written to
-belong to a city, so its label is the author's intent. That is fine for an
-illustrative case study but circular as a benchmark. WNUT-2016 instead labels
-every tweet from its GPS geotag mapped to a GeoNames metropolitan centre, the
-standard distant-supervision protocol in the geolocation literature (Eisenstein
-et al. 2010; Han et al. 2014). Running GeoLens on a WNUT-derived set therefore
-gives labels that come from the data rather than from us and, at ~1000 rows,
-much tighter Wilson intervals than the 50-row set.
+Every row is labelled from its GPS geotag mapped to the nearest catalogue
+coordinate, the distant-supervision protocol standard in this literature, and
+the five buckets (`intl`, `hard-sem`, `ooc`, `disagree`, `userhome`) are derived
+by filtering real rows rather than by writing text. The script reads
+`Validation Set.zip`, which comes from the shared task organisers under their
+terms and is not in this repository, and writes CSVs that are git-ignored
+because they carry rehydrated tweet text. `--verify-manifest` diffs the ids it
+produced against the committed `eval/wnut2016_id_manifest.csv` per bucket and
+exits non-zero on a mismatch. `eval/README.md` has the schema and the bucket
+table.
 
-What it produces
-----------------
-Rows in the tool's existing CSV schema (see ``eval/README.md``):
-``id, post, user_posts, ground_truth_city, bucket, should_disagree, source, lang``.
-All labels come from the WNUT geotags; buckets are derived by *filtering* real
-rows, never by authoring text:
-
-* ``intl``     in-catalogue tweet whose text DOES name a catalogue city.
-* ``hard-sem`` in-catalogue tweet whose text names NO catalogue city (the post
-               is placeable only by its geotag, the genuinely hard implicit case).
-* ``ooc``      tweet whose geotag is far from every catalogue city; the real
-               city is kept as ground truth so the engine must reject it.
-* ``disagree`` a user whose home city is in-catalogue but who has a single tweet
-               geotagged to a different in-catalogue city >161 km away. That
-               tweet is the ``post`` and the rest of the timeline is
-               ``user_posts``; ``should_disagree=1``. Ground truth follows the
-               osint convention used in the bundled set: the single post's own
-               city.
-* ``userhome`` a home-consistent user (timeline and post agree); ``should_disagree=0``,
-               a negative control for the cross-task banner and a user-level
-               accuracy case. Ground truth is the home city.
-
-WNUT-2016 is English-framed (non-English tweets appear but unevenly), so the
-multilang / crisis / sarcasm / ambig buckets are out of scope here and stay in
-the authored set.
-
-Usage
------
+Usage:
     python3 eval/adapters/wnut2016_to_geolens.py \
         --zip "/path/to/Validation Set.zip" \
         --out eval/wnut2016_test_set.csv \
-        --sample-out eval/wnut2016_sample50.csv
-
-The adapter only reads the zip; it writes the two CSVs.
+        --sample-out eval/wnut2016_sample50.csv \
+        --verify-manifest eval/wnut2016_id_manifest.csv
 """
 
 from __future__ import annotations
@@ -57,13 +28,109 @@ import html
 import json
 import random
 import re
+import subprocess
 import zipfile
 from collections import defaultdict
+from pathlib import Path
 
 from geolens.engines._cities import DEFAULT_CITIES
 from geolens.engines._coords import CITY_COORDS
 from geolens.engines.gazetteer import _count_matches
 from geolens.geo import ACC_KM_THRESHOLD, haversine_km
+
+REPO = Path(__file__).resolve().parents[2]
+
+# The tag the paper cites for the committed results under eval/results/.
+EVAL_TAG = "wnut2016-eval-3803853"
+
+# What the committed run holds, per bucket. The adapter prints these beside
+# what it just produced, so a regeneration that yields a different split is
+# obvious rather than something a reader has to count for themselves.
+COMMITTED_COUNTS = {
+    "intl": 137,
+    "hard-sem": 200,
+    "ooc": 150,
+    "disagree": 200,
+    "userhome": 200,
+}
+
+# Commits after the tag that change what this adapter's engines return. A
+# re-run at HEAD is a different run, and saying so here is cheaper than
+# leaving a reproducer to find it by diffing numbers.
+CHANGED_SINCE_TAG = """\
+This tree is not at {tag}, which the paper cites for the committed results
+under eval/results/. A later fix (0.14.1) corrected the gazetteer's
+candidate list: at HEAD the list holds only the places the text named and an
+abstention carries no place at all. The gazetteer's
+top-1 place and score on a match are unchanged, so its own row is the same,
+but the fused rows and any rank-based metric that reads the candidate list
+will differ from the committed results. Re-run at the tag to reproduce
+eval/results/wnut2016.json exactly.\
+"""
+
+
+def _git(*args: str) -> str:
+    try:
+        return subprocess.run(
+            ["git", "-C", str(REPO), *args], capture_output=True, text=True, check=True
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return ""
+
+
+def tag_note() -> str | None:
+    """A note about what changed since the evaluation tag, or None at the tag."""
+    head = _git("rev-parse", "HEAD")
+    tagged = _git("rev-list", "-n", "1", EVAL_TAG)
+    if not head or not tagged:
+        return None  # no checkout, or the tag is not fetched: say nothing
+    if head == tagged:
+        return None
+    return CHANGED_SINCE_TAG.format(tag=EVAL_TAG)
+
+
+def read_manifest_buckets(path: str) -> dict[str, set[str]]:
+    """Row ids per bucket, from a committed or freshly written ID manifest."""
+    buckets: dict[str, set[str]] = defaultdict(set)
+    with open(path, newline="", encoding="utf-8-sig") as fh:
+        for row in csv.DictReader(fh):
+            buckets[row["bucket"]].add(row["id"])
+    return dict(buckets)
+
+
+def verify_against_manifest(rows: list[dict], manifest_path: str) -> int:
+    """Diff the ids just produced against a committed manifest, per bucket.
+
+    Returns the number of buckets that differ, so the caller can exit
+    non-zero. Prints what is missing and what is extra rather than only that
+    the counts disagree: a regeneration that yields the right count from
+    different rows is the failure worth catching.
+    """
+    expected = read_manifest_buckets(manifest_path)
+    produced: dict[str, set[str]] = defaultdict(set)
+    for r in rows:
+        produced[r["id"].rsplit("-", 1)[0]].add(r["id"])
+
+    print(f"\nverifying against {manifest_path}")
+    print("bucket           expected  produced  missing  extra")
+    mismatches = 0
+    for bucket in sorted(set(expected) | set(produced)):
+        want, got = expected.get(bucket, set()), produced.get(bucket, set())
+        missing, extra = want - got, got - want
+        print(
+            f"  {bucket:14s} {len(want):9d} {len(got):9d} {len(missing):8d} {len(extra):6d}"
+        )
+        if missing or extra:
+            mismatches += 1
+            for label, ids in (("missing", missing), ("extra", extra)):
+                if ids:
+                    sample = ", ".join(sorted(ids)[:5])
+                    print(f"      {label}: {sample}{' ...' if len(ids) > 5 else ''}")
+    if mismatches:
+        print(f"\n{mismatches} bucket(s) differ from {manifest_path}.")
+    else:
+        print("\nevery bucket matches the committed manifest.")
+    return mismatches
 
 # Members inside "Validation Set.zip".
 TWEET_GOLD = "Validation Set/validation.tweet.json"
@@ -206,7 +273,7 @@ def build_user_rows(zf: zipfile.ZipFile) -> dict[str, list[dict]]:
             by_user[str(uid)].append(obj)
 
     buckets: dict[str, list[dict]] = defaultdict(list)
-    for uid, rows in by_user.items():
+    for rows in by_user.values():
         home_lat, home_lon = _flt(rows[0], "user_city_latitude"), _flt(rows[0], "user_city_longitude")
         if home_lat is None or home_lon is None:
             continue
@@ -260,12 +327,14 @@ def assemble(zf: zipfile.ZipFile, targets: dict[str, int], seed: int) -> list[di
     pools = build_tweet_rows(zf)
     pools.update(build_user_rows(zf))
     rows: list[dict] = []
-    print("bucket            available  taken")
+    print("bucket            available  taken  committed run")
     for bucket in ("intl", "hard-sem", "ooc", "disagree", "userhome"):
         pool = pools.get(bucket, [])
         rng.shuffle(pool)
         take = pool[: targets.get(bucket, 0)]
-        print(f"  {bucket:14s}  {len(pool):8d}  {len(take):5d}")
+        expected = COMMITTED_COUNTS[bucket]
+        flag = "" if len(take) == expected else "   <- differs"
+        print(f"  {bucket:14s}  {len(pool):8d}  {len(take):5d}  {expected:13d}{flag}")
         for i, r in enumerate(take):
             r = dict(r)
             r["id"] = f"{bucket}-{i:04d}"
@@ -304,15 +373,39 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", default="eval/wnut2016_test_set.csv")
     p.add_argument("--sample-out", default="eval/wnut2016_sample50.csv",
                    help="A <=50-row stratified subset for the hosted Space (its 50-row cap).")
-    p.add_argument("--id-manifest", default="eval/wnut2016_id_manifest.csv",
-                   help="Shareable tweet-ID + label manifest (committable; no tweet text).")
+    p.add_argument(
+        "--id-manifest",
+        default="eval/wnut2016_id_manifest_regenerated.csv",
+        help=(
+            "Where to write the tweet-ID + label manifest (no tweet text). It "
+            "deliberately does not default to eval/wnut2016_id_manifest.csv: "
+            "that file is the committed record a reproducer diffs against, and "
+            "overwriting it destroys the comparison. Use --verify-manifest to "
+            "make the comparison."
+        ),
+    )
+    p.add_argument(
+        "--verify-manifest",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Diff the ids just produced against a committed ID manifest, per "
+            "bucket, and exit non-zero on any mismatch. Pass "
+            "eval/wnut2016_id_manifest.csv to check a regeneration against the "
+            "committed run."
+        ),
+    )
     p.add_argument("--seed", type=int, default=13)
     args = p.parse_args(argv)
+
+    note = tag_note()
+    if note:
+        print(note + "\n")
 
     with zipfile.ZipFile(args.zip) as zf:
         rows = assemble(zf, DEFAULT_TARGETS, args.seed)
     write_csv(args.out, rows)
-    print(f"\nwrote {len(rows)} rows -> {args.out}")
+    print(f"\nwrote {len(rows)} rows -> {args.out}  (the committed run has 887)")
     write_id_manifest(args.id_manifest, rows)
     print(f"wrote tweet-ID manifest -> {args.id_manifest}")
 
@@ -331,6 +424,9 @@ def main(argv: list[str] | None = None) -> int:
                 sample.append(v.pop())
     write_csv(args.sample_out, sample)
     print(f"wrote {len(sample)} rows -> {args.sample_out}")
+
+    if args.verify_manifest and verify_against_manifest(rows, args.verify_manifest):
+        return 1
     return 0
 
 

@@ -3,198 +3,298 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GeoLens: Geolocation Workbench</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <title>GeoLens: geolocation workbench</title>
+  <!-- Leaflet is served from this instance; only the basemap tiles are
+       fetched from openstreetmap.org, by the visitor's browser. -->
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+  <a class="skip-link" href="#content">Skip to the main content</a>
   <header>
-    <h1>GeoLens</h1>
-    <span class="header-sub">A workbench for social-media geolocation</span>
-    <a class="header-link" href="https://github.com/kwanhui/public-geoLens-WSDM2027" target="_blank">github</a>
+    <div class="header-title">
+      <h1>GeoLens</h1>
+      <span class="header-sub">A workbench for social-media geolocation</span>
+    </div>
+    <span id="quota-line" class="quota-line hidden">
+      <span id="quota-counts"></span>
+      <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-quota">
+        <span aria-hidden="true">i</span><span class="visually-hidden">About: the hourly budget</span>
+      </button>
+      <span class="info-body hidden" id="i-quota">What is left of this hour's budget. The limits count per IP address, over the hour they apply to. Running GeoLens locally applies no limit.</span>
+    </span>
+    <a class="header-link" href="https://github.com/kwanhui/public-geoLens-WSDM2027" target="_blank" rel="noopener">Code</a>
+    <span class="header-note">
+      <a class="header-link" id="video-link" href="#" target="_blank" rel="noopener">Video</a>
+    </span>
   </header>
 
-  <nav id="mode-tabs">
-    <button class="mode-tab active" data-mode="demo">Live demo</button>
-    <button class="mode-tab" data-mode="batch">Batch evaluation</button>
-  </nav>
+  <div class="tagline">
+    <p>
+      Compare <span id="tagline-engines">the</span> geolocation engines on a
+      post, on an account's recent posts, or on both.<button type="button" class="info-btn" aria-expanded="false" aria-controls="i-tagline"><span aria-hidden="true">i</span><span class="visually-hidden">About: what GeoLens compares</span></button>
+    </p>
+    <div class="info-body hidden" id="i-tagline">Each engine names one place from a closed candidate list. Post-level engines read the post on its own, and user-level engines read the account's recent posts. The verification flag reports when the two point far apart.</div>
+  </div>
 
-  <section id="scenario-strip" data-mode-target="demo">
-    <div class="scenario-strip-label">Try a scenario:</div>
+  <div id="spend-notice" class="mode-banner hidden" role="status"></div>
+
+  <details class="data-handling" id="data-handling">
+    <summary>Data handling</summary>
+    <p>Posts and timelines are not stored by GeoLens.</p>
+    <p>With the LLM engines selected, the post and the timeline are sent to OpenAI and Anthropic, which retain API inputs under their own policies.</p>
+    <p>An onboarded place's name, region hint and drafted profile are stored on this instance, listed to every visitor until they expire, and included in later LLM prompts. Onboard only names that can be public.</p>
+    <p>The per-address limits process your IP address for the hour they count over.</p>
+    <p>Map tiles are requested from openstreetmap.org by your browser, including under "Local engines only", and indicate roughly where a result is.</p>
+    <p>In a bulk run, row ids should not be account identifiers.</p>
+    <p>Do not submit data about identifiable people without a lawful basis. The verification flag is a prompt for review, not evidence.</p>
+  </details>
+
+  <!-- One row for the five functions. The first four share #panel-demo, and
+       the blocks inside it carry a data-task list of the tabs they belong
+       to; app.js toggles them. -->
+  <!-- One element carries the row and the tablist, so a screen reader reads
+       one name for it rather than a navigation landmark and a tab list of
+       the same name. -->
+  <div id="mode-tabs" class="mode-tablist" role="tablist" aria-label="Tasks">
+    <button class="mode-tab active" role="tab" id="tab-post" data-mode="post"
+            aria-selected="true" aria-controls="panel-demo" tabindex="0">Post Geolocation</button>
+    <button class="mode-tab" role="tab" id="tab-user" data-mode="user"
+            aria-selected="false" aria-controls="panel-demo" tabindex="-1">User Geolocation</button>
+    <button class="mode-tab" role="tab" id="tab-verify" data-mode="verify"
+            aria-selected="false" aria-controls="panel-demo" tabindex="-1">Post vs. User Verification</button>
+    <button class="mode-tab" role="tab" id="tab-onboard" data-mode="onboard"
+            aria-selected="false" aria-controls="panel-demo" tabindex="-1">Cold-start Place Onboarding</button>
+    <button class="mode-tab" role="tab" id="tab-batch" data-mode="batch"
+            aria-selected="false" aria-controls="batch-panel" tabindex="-1">Bulk Evaluation</button>
+  </div>
+  <!-- A preset switches tab on its own, and the tab row's selection is not
+       announced by itself, so the name of the tab a step opened is read
+       here. -->
+  <p id="tab-announce" class="visually-hidden" role="status"></p>
+
+  <div id="content" tabindex="-1">
+  <div id="panel-demo" role="tabpanel" aria-labelledby="tab-post"
+       data-task="post user verify onboard">
+
+  <section id="scenario-strip" aria-label="Scenarios">
+    <h2 class="scenario-strip-label" id="scenario-strip-label">Demonstration: Try a scenario</h2>
     <div id="scenario-tiles"></div>
   </section>
 
-  <section id="batch-panel" class="batch-panel hidden" data-mode-target="batch">
-    <div class="batch-intro">
-      <h2>Bulk evaluation</h2>
-      <p>
-        Upload a CSV of inputs (and optional ground-truth city) to run all 9
-        engines + ensembles in one shot. The Space caps batches at 50 rows
-        and 5 batches per IP per hour.
-        <a href="/static/example_test_set.csv" download>Download the example CSV (50 rows)</a>
-        or <a href="https://github.com/kwanhui/public-geoLens-WSDM2027/blob/main/eval/README.md" target="_blank">read the format spec</a>.
-      </p>
-    </div>
-
-    <div class="batch-actions">
-      <input type="file" id="batch-file" accept=".csv,text/csv">
-      <button id="batch-run-btn" class="primary" disabled>Run evaluation</button>
-      <span id="batch-rowcount" class="batch-meta"></span>
-    </div>
-
-    <div id="batch-status" class="batch-status hidden" role="alert"></div>
-
-    <div id="batch-rollup" class="batch-rollup hidden">
-      <h3>Predicted-location distribution</h3>
-      <p class="per-bucket-note">Where the corpus places its posts. Computed without ground truth, so it works on any upload. These are raw post counts, not population-normalised rates: a larger count reflects more posts, not necessarily more events, so do not read it as incidence without a denominator.</p>
-      <div class="per-bucket-scroll">
-        <table class="summary-table rollup-table">
-          <thead><tr><th>City</th><th>Post-level</th><th>User-level</th><th>Total</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="batch-summary" class="batch-summary hidden">
-      <h3>Per-engine summary</h3>
-      <div class="summary-meta"></div>
-      <table class="summary-table">
-        <thead>
-          <tr>
-            <th>Engine</th>
-            <th>Acc@1</th>
-            <th>Acc@5</th>
-            <th>Mean rank</th>
-            <th title="Median great-circle error of the top-1 prediction">Median km err.</th>
-            <th title="Accuracy within 161 km (100 miles) of ground truth">Acc@161km</th>
-            <th>Median latency</th>
-            <th>Total cost</th>
-            <th>n</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <h3 style="margin-top:14px">Ensemble summary</h3>
-      <table class="summary-table ensemble-table">
-        <thead>
-          <tr>
-            <th>Ensemble</th>
-            <th>Acc@1</th>
-            <th>Acc@5</th>
-            <th>Mean rank</th>
-            <th title="Median great-circle error of the consensus prediction">Median km err.</th>
-            <th title="Accuracy within 161 km (100 miles) of ground truth">Acc@161km</th>
-            <th>Differs from best single</th>
-            <th>n</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <details class="per-bucket-wrap">
-        <summary>Per-difficulty breakdown (Acc@1 by bucket)</summary>
-        <p class="per-bucket-note">Buckets come from a <code>bucket</code>/<code>tag</code> column, or are derived from the id prefix (e.g. <code>hard-sem-3</code> &rarr; <code>hard-sem</code>).</p>
-        <div class="per-bucket-scroll">
-          <table class="summary-table per-bucket-table">
-            <thead><tr><th>Bucket</th><th>n</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </details>
-      <div class="batch-downloads">
-        <button id="dl-results-csv" class="secondary">Download per-row results (CSV)</button>
-        <button id="dl-geojson" class="secondary">Download GeoJSON (WGS84)</button>
-        <button id="dl-summary-tex" class="secondary">Copy LaTeX summary table</button>
-        <button id="dl-manifest" class="secondary">Download run manifest (JSON)</button>
-      </div>
-    </div>
-
-    <div id="batch-rows" class="batch-rows hidden">
-      <h3>Per-row results <span class="batch-meta" id="rows-count"></span></h3>
-      <table class="rows-table">
-        <thead>
-          <tr>
-            <th>id</th>
-            <th>ground truth</th>
-            <th>status</th>
-            <th>post ensemble</th>
-            <th>user ensemble</th>
-            <th>disagreement</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
-
-  <main data-mode-target="demo">
-    <section class="left-pane">
-      <div class="panel" id="input-panel">
-        <h2>Input</h2>
-        <p class="privacy-notice">In real mode, text you submit is sent to OpenAI/Anthropic for analysis and is not stored by GeoLens. Do not submit data about identifiable people without a lawful basis. The cross-task signal is a review prompt, not evidence.</p>
-        <div id="demo-error" class="batch-status error hidden" role="alert"></div>
+  <main>
+    <section class="left-pane" aria-label="Input and catalogue">
+      <!-- The error, the running scenario and its controls belong to no one
+           tab, so they sit above the panels and stay on screen when a preset
+           moves from one tab to the next. -->
+      <div class="run-strip" data-task="post user verify onboard">
+        <div id="demo-error" class="batch-status error hidden" role="alert" tabindex="-1"></div>
         <div id="active-scenario-banner" class="scenario-banner hidden">
           <div>
-            <div class="banner-audience"></div>
             <div class="banner-headline"></div>
+            <div class="banner-placeholder hidden"></div>
           </div>
         </div>
-        <label for="post">Post text (post-level engines)</label>
-        <textarea id="post" rows="2" placeholder="Just landed at Changi, ready for kaya toast"></textarea>
-
-        <label for="user_handle">User handle (optional)</label>
-        <input type="text" id="user_handle" placeholder="@some_user">
-
-        <label for="user_posts">Recent user posts, one per line (user-level engines)</label>
-        <textarea id="user_posts" rows="3"
-                  placeholder="Just landed at Changi&#10;Long queue at Newton hawker"></textarea>
-
-        <div class="button-row">
-          <button id="geolocate-btn" class="primary">Geolocate</button>
-          <button id="export-verdict-btn" class="secondary hidden" title="Download the full verdict (per-engine votes, ensemble, disagreement score, and run manifest) as JSON for an audit trail.">⤓ Export verdict</button>
-          <button id="replay-btn" class="secondary hidden">▶ Replay scenario</button>
-          <label class="fusion-select" title="How engines within a bucket are combined. RRF (Cormack et al. 2009) uses only rank, so engines with incomparable confidence scales combine fairly.">
-            <span>Fusion</span>
-            <select id="ensemble-method">
-              <option value="weighted">Weighted sum</option>
-              <option value="rrf">Reciprocal Rank Fusion</option>
-            </select>
-          </label>
-          <label class="comparison-toggle">
-            <input type="checkbox" id="comparison-toggle">
-            <span>Show ensemble vs. best single engine</span>
-          </label>
+        <!-- The bar of a loaded scenario: what it is doing, in words, how far
+             through it is, the way out, and Pause, Next step and Restart
+             while there are steps left to drive. The step line is the live
+             region of the three, so the state label beside it is not one and
+             a screen reader hears the change once. The bar itself is read by
+             eye, so the progress element repeats the step line and is left
+             out of the accessibility tree. -->
+        <div id="preset-controls" class="preset-controls hidden" aria-label="Scenario controls">
+          <div class="preset-headline">
+            <span id="preset-state" class="preset-state"></span>
+            <button id="preset-exit-btn" class="secondary">Exit scenario</button>
+          </div>
+          <div class="preset-progress-row">
+            <progress id="preset-progress" class="preset-progress" max="1" value="0"
+                      aria-hidden="true"></progress>
+            <span id="preset-step" class="preset-step" role="status"></span>
+          </div>
+          <div class="preset-buttons">
+            <button id="preset-pause-btn" class="secondary">Pause</button>
+            <button id="preset-next-btn" class="secondary">Next step</button>
+            <button id="preset-retry-btn" class="secondary hidden">Retry</button>
+            <button id="preset-restart-btn" class="secondary">Restart</button>
+          </div>
+        </div>
+        <!-- Removing an onboarded place belongs to the onboarding form and
+             to a cold-start scenario, so the control sits with the other
+             scenario state rather than under the query boxes. app.js shows
+             it only where there is a place to remove. -->
+        <div id="reset-row" class="button-row reset-row hidden">
+          <!-- Leaving a scenario does not remove the place it onboarded, so
+               the line says the place is there and the button below removes
+               it. app.js writes the line and takes it off once the place is
+               gone. -->
+          <span id="leftover-place" class="leftover-place hidden"></span>
+          <span class="with-note" id="reset-scenario-note">
+            <button id="reset-scenario-btn" class="secondary">Reset onboarding</button>
+            <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-reset">
+              <span aria-hidden="true">i</span><span class="visually-hidden">About: Reset onboarding</span>
+            </button>
+          </span>
+          <span class="info-body hidden" id="i-reset">Removes this onboarded place from the shared catalogue. A cold start can then run again.</span>
         </div>
       </div>
 
-      <div class="panel" id="onboard-panel">
-        <h2>Cold-start city onboarding</h2>
+      <div class="panel" id="input-panel" data-task="post user verify">
+        <h2>Input</h2>
+        <div class="note-line">
+          <p class="privacy-notice">Text is sent to OpenAI and Anthropic.</p>
+          <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-privacy-demo">
+            <span aria-hidden="true">i</span><span class="visually-hidden">About: where the text goes</span>
+          </button>
+        </div>
+        <div class="info-body hidden" id="i-privacy-demo">Choosing "Local engines only" in Engines keeps every call on this server. GeoLens stores nothing you submit. Map tiles are requested from openstreetmap.org by your browser, including under "Local engines only".</div>
+
+        <!-- One line per task, with the engines that answer it behind the
+             icon. The counts and the names are written by app.js from the
+             roster the server serves, as the tagline's count is. A note
+             carries the same data-task as its line, so it is hidden with the
+             tab it belongs to. -->
+        <p class="task-line" data-task="post">Geolocate one post from its own text.<button type="button" class="info-btn" aria-expanded="false" aria-controls="i-task-post"><span aria-hidden="true">i</span><span class="visually-hidden">About: post geolocation</span></button></p>
+        <div class="info-body hidden" data-task="post" id="i-task-post">The post on its own goes to the <span id="task-engines-post"></span> post-level engines<span id="task-names-post"></span>, and each of them names one place from the closed catalogue. Nothing about the account is sent from this tab.</div>
+        <p class="task-line hidden" data-task="user">Geolocate an account from its recent posts.<button type="button" class="info-btn" aria-expanded="false" aria-controls="i-task-user"><span aria-hidden="true">i</span><span class="visually-hidden">About: user geolocation</span></button></p>
+        <div class="info-body hidden" data-task="user" id="i-task-user">The recent posts go to the <span id="task-engines-user"></span> user-level engines<span id="task-names-user"></span>, which place the account rather than any one post. The post box is not sent from this tab.</div>
+        <p class="task-line hidden" data-task="verify">Check a post against its account's recent posts. The flag needs both boxes.<button type="button" class="info-btn" aria-expanded="false" aria-controls="i-task-verify"><span aria-hidden="true">i</span><span class="visually-hidden">About: post versus user verification</span></button></p>
+        <div class="info-body hidden" data-task="verify" id="i-task-verify">The post goes to the <span id="task-engines-verify-post"></span> post-level engines<span id="task-names-verify-post"></span> and the recent posts to the <span id="task-engines-verify-user"></span> user-level ones<span id="task-names-verify-user"></span>. The verification flag compares the consensus place of each level and is raised when the two are far apart. It needs both boxes, and with one of them empty no flag is computed.</div>
+
+        <div class="field-block" data-task="post verify">
+          <div class="field-head">
+            <label for="post">Post text</label>
+            <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-post-field">
+              <span aria-hidden="true">i</span><span class="visually-hidden">About: the post box</span>
+            </button>
+          </div>
+          <div class="info-body hidden" id="i-post-field">Read on its own by the post-level engines.</div>
+          <textarea id="post" rows="2" placeholder="Just landed at Changi, ready for kaya toast"></textarea>
+          <span id="post-count" class="char-count" aria-live="off"></span>
+        </div>
+
+        <div class="field-block hidden" data-task="user verify">
+          <div class="field-head">
+            <label for="user_posts">Recent posts, one per line</label>
+            <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-user-posts-field">
+              <span aria-hidden="true">i</span><span class="visually-hidden">About: the recent-posts box</span>
+            </button>
+          </div>
+          <div class="info-body hidden" id="i-user-posts-field">Read by the user-level engines, which place the account rather than the post.</div>
+          <textarea id="user_posts" rows="3"
+                    placeholder="Just landed at Changi&#10;Long queue at Newton hawker"></textarea>
+          <span id="user_posts-count" class="char-count" aria-live="off"></span>
+        </div>
+
+        <!-- Each note's body is a sibling of the control's wrapper rather
+             than a child of it, so an open note runs the width of the row
+             instead of widening one flex item and re-wrapping the buttons.
+             Nothing sits between a button and the body it opens. -->
+        <div class="button-row" data-task="post user verify">
+          <button id="geolocate-btn" class="primary">Geolocate</button>
+          <span class="with-note hidden" id="export-result-note">
+            <button id="export-result-btn" class="secondary">Export result</button>
+            <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-export">
+              <span aria-hidden="true">i</span><span class="visually-hidden">About: Export result</span>
+            </button>
+          </span>
+          <span class="info-body hidden" id="i-export">Downloads this result and its run manifest as JSON.</span>
+          <button id="replay-btn" class="secondary hidden">Replay scenario</button>
+          <span class="with-note">
+            <label class="fusion-select">
+              <span>Engines</span>
+              <select id="engine-preset">
+                <option value="all">All engines</option>
+                <option value="local">Local engines only</option>
+              </select>
+            </label>
+            <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-engines">
+              <span aria-hidden="true">i</span><span class="visually-hidden">About: Engines</span>
+            </button>
+          </span>
+          <span class="info-body hidden" id="i-engines">Which engines run. With "Local engines only" no text leaves this server.</span>
+          <span class="with-note">
+            <label class="fusion-select">
+              <span>Fusion method</span>
+              <select id="ensemble-method">
+                <option value="weighted">Sum of top-k scores</option>
+                <option value="rrf">Reciprocal rank fusion</option>
+              </select>
+            </label>
+            <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-fusion">
+              <span aria-hidden="true">i</span><span class="visually-hidden">About: Fusion method</span>
+            </button>
+          </span>
+          <span class="info-body hidden" id="i-fusion">How one level's engines are combined into a single prediction. The verification flag does not use this setting.</span>
+          <span class="with-note wide">
+            <label class="comparison-toggle">
+              <input type="checkbox" id="comparison-toggle">
+              <span>Compare with the best single engine</span>
+            </label>
+            <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-comparison">
+              <span aria-hidden="true">i</span><span class="visually-hidden">About: the comparison panel</span>
+            </button>
+          </span>
+          <span class="info-body hidden" id="i-comparison">Adds a panel setting the fused prediction beside the single engine that scored highest on this query, at each level.</span>
+        </div>
+      </div>
+
+      <div class="panel hidden" id="onboard-panel" data-task="onboard">
+        <h2>Cold-start Place Onboarding</h2>
+        <!-- Whether the country or region is required is a setting of the
+             deployment, so app.js writes this line from the same field the
+             hint under the label reads. -->
+        <p class="task-line"><span id="onboard-task-text">Add a place that the catalogue lacks, from its name and its country or region.</span><button type="button" class="info-btn" aria-expanded="false" aria-controls="i-onboard-how"><span aria-hidden="true">i</span><span class="visually-hidden">About: how a name and a country are enough</span></button></p>
+        <div class="info-body hidden" id="i-onboard-how"><span class="info-para">The candidate list is closed, so no engine can predict a place that the catalogue does not hold. To add one, you type only its name and its country or region. A drafting model, GPT-4o-mini, then writes a short profile of the place, with aliases, landmarks, local foods, slang, a note and an approximate coordinate. The country or region tells the model which place of that name is meant, and the panel warns when the drafted coordinate falls outside that country.</span><span class="info-para">Once onboarded, the place is one more candidate that every engine can pick, and no engine is retrained. The gazetteer matches the name, the aliases and the landmarks in a text. ContrastGeo compares the text with the place name, FewUser with a short phrase around the name, and RetrieveZero with a passage built from the profile. The prompted LLM engines read the name in the candidate list of their prompt.</span><span class="info-para">The coordinate pins the place on the map and enters the distance measures, so an approximate point is enough for a town or an estate. Onboard adds the place to the catalogue at once, with the drafted profile, and Save and use replaces that draft with your corrections. Without an API key, the draft comes from an offline placeholder and every field needs correcting.</span></div>
+        <p class="panel-note">
+          Shared with every visitor, so use public names only.<button type="button" class="info-btn" aria-expanded="false" aria-controls="i-onboard-sharing"><span aria-hidden="true">i</span><span class="visually-hidden">About: what onboarding shares</span></button>
+        </p>
+        <!-- How long an onboarded place lasts depends on the deployment, so
+             app.js writes the first sentence from the catalogue listing. -->
+        <div class="info-body hidden" id="i-onboard-sharing"><span class="info-para hidden" id="onboard-ttl-note"></span><span class="info-para">The place name goes into later LLM prompts, so onboard only names that can be public. <a href="#data-handling">Data handling</a> has the rest.</span></div>
         <div class="onboard-input-row">
-          <input type="text" id="onboard_city" placeholder="Tengah Plantation Crescent">
+          <label class="visually-hidden" for="onboard_city">Place name</label>
+          <input type="text" id="onboard_city" placeholder="Bidadari Estate">
           <button id="onboard-btn" class="primary">Onboard</button>
         </div>
+        <div class="field-head">
+          <label for="onboard_region" id="onboard_region_label">Country or region</label>
+          <span id="onboard-region-required" class="required-mark hidden">required</span>
+          <button type="button" class="info-btn" aria-expanded="false" aria-controls="onboard-region-hint">
+            <span aria-hidden="true">i</span><span class="visually-hidden">About: Country or region</span>
+          </button>
+        </div>
+        <div class="info-body hidden" id="onboard-region-hint">Used in the drafting prompt, and to check the drafted coordinate at country scale.</div>
+        <input type="text" id="onboard_region" placeholder="Singapore">
+        <div id="onboard-status" class="onboard-status hidden" role="status" tabindex="-1"></div>
+        <div id="onboarded-places" class="onboarded-places hidden"></div>
         <div id="onboard-cards" class="onboard-cards hidden">
           <div class="onboard-source"></div>
           <ul id="onboard-warnings" class="onboard-warnings hidden" role="alert" aria-label="Profile warnings to fix before saving"></ul>
           <div class="onboard-card" data-field="aliases">
-            <h3>Aliases</h3>
-            <textarea data-field="aliases" rows="1" placeholder="comma-separated"></textarea>
+            <h3 id="onboard-label-aliases">Aliases</h3>
+            <textarea id="onboard_aliases" data-field="aliases" rows="1"
+                      aria-labelledby="onboard-label-aliases" placeholder="comma-separated"></textarea>
           </div>
           <div class="onboard-card" data-field="landmarks">
-            <h3>Landmarks</h3>
-            <textarea data-field="landmarks" rows="2" placeholder="comma-separated"></textarea>
+            <h3 id="onboard-label-landmarks">Landmarks</h3>
+            <textarea id="onboard_landmarks" data-field="landmarks" rows="2"
+                      aria-labelledby="onboard-label-landmarks"></textarea>
           </div>
           <div class="onboard-card" data-field="foods">
-            <h3>Local foods</h3>
-            <textarea data-field="foods" rows="2" placeholder="comma-separated"></textarea>
+            <h3 id="onboard-label-foods">Local foods</h3>
+            <textarea id="onboard_foods" data-field="foods" rows="2"
+                      aria-labelledby="onboard-label-foods"></textarea>
           </div>
           <div class="onboard-card" data-field="slang">
-            <h3>Slang / phrases</h3>
-            <textarea data-field="slang" rows="1" placeholder="comma-separated"></textarea>
+            <h3 id="onboard-label-slang">Slang and phrases</h3>
+            <textarea id="onboard_slang" data-field="slang" rows="1"
+                      aria-labelledby="onboard-label-slang"></textarea>
           </div>
           <div class="onboard-card" data-field="notes">
-            <h3>Notes</h3>
-            <textarea data-field="notes" rows="2"></textarea>
+            <h3 id="onboard-label-notes">Notes</h3>
+            <textarea id="onboard_notes" data-field="notes" rows="4"
+                      aria-labelledby="onboard-label-notes"></textarea>
           </div>
           <div class="onboard-card" data-field="coords">
             <h3>Map coordinate</h3>
@@ -204,77 +304,424 @@
               <label class="visually-hidden" for="onboard_lon">Longitude (WGS84 decimal degrees)</label>
               <input type="number" step="any" id="onboard_lon" placeholder="longitude" aria-label="Longitude, WGS84 decimal degrees">
             </div>
-            <div class="coord-hint">Needed to pin the city on the map and score distance error. An LLM fills this when a key is set; edit it if it looks wrong.</div>
+            <!-- The line asks for a check only once there is a pin to
+                 check; app.js swaps it as the two boxes are filled in. -->
+            <div class="coord-hint"><span id="coord-hint-text">No coordinate yet.</span><button type="button" class="info-btn" aria-expanded="false" aria-controls="i-coord"><span aria-hidden="true">i</span><span class="visually-hidden">About: Map coordinate</span></button></div>
+            <div class="info-body hidden" id="i-coord">WGS84 decimal degrees. The purple pin on the map is what will be saved.</div>
           </div>
           <div class="onboard-button-row">
-            <button id="onboard-save-btn" class="primary">Save & Use</button>
-            <button id="onboard-regen-btn" class="secondary">Re-generate from LLM</button>
+            <button id="onboard-save-btn" class="primary">Save and use</button>
+            <span class="with-note">
+              <button id="onboard-regen-btn" class="secondary">Draft again</button>
+              <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-draft-again">
+                <span aria-hidden="true">i</span><span class="visually-hidden">About: these two buttons</span>
+              </button>
+            </span>
+            <span class="info-body hidden" id="i-draft-again">Onboard has already added this place to the catalogue and drafted the profile above, and Save and use stores the edits against it. Draft again drafts a fresh profile, ignoring the cached one.</span>
           </div>
         </div>
       </div>
-    </section>
-
-    <section class="right-pane" role="region" aria-live="polite" aria-label="Geolocation results">
-      <div id="stub-banner" class="stub-banner hidden"></div>
-      <div id="map" role="img" aria-label="Map of predicted locations"></div>
-      <p id="map-summary" class="visually-hidden" aria-live="polite"></p>
-      <div id="map-notice" class="map-notice hidden"></div>
-      <div id="disagreement-banner" class="disagreement-banner hidden">
-        <div class="disagreement-headline">
-          <span class="disagreement-icon">⚠</span>
-          <span class="disagreement-text"></span>
-        </div>
-        <details class="disagreement-why">
-          <summary>What might this mean?</summary>
-          <ul>
-            <li><b>Travel post.</b> The user is visiting a different city from where they normally post.</li>
-            <li><b>Account compromise / shared account.</b> The post was made from a different person than the account owner.</li>
-            <li><b>Misleading or fake geotag.</b> The post claims a location it isn't actually from.</li>
-          </ul>
+      <div class="panel" id="catalogue-panel" data-task="post user verify onboard">
+        <details id="catalogue-details">
+          <summary>Candidate places (<span id="catalogue-size">?</span>)</summary>
+          <p class="panel-note">
+            The catalogue is closed. Every engine answers with a place from
+            this list and cannot say "none of these". If the place you are
+            looking for is not here, add it on the onboarding tab.
+          </p>
+          <!-- The note explains the rows, so it sits on the list rather
+               than on the paragraph above it. -->
+          <div class="list-note">
+            <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-catalogue-rows"><span aria-hidden="true">i</span><span class="visually-hidden">About: what a row holds</span></button>
+            <div class="info-body hidden" id="i-catalogue-rows">Each row gives the place, its coordinate and where it came from. An onboarded place also shows how old it is and when it expires.</div>
+          </div>
+          <div id="catalogue-list" class="catalogue-list"></div>
         </details>
       </div>
 
-      <!-- Ensembles: the headline result for each granularity bucket -->
+    </section>
+
+    <section class="right-pane" role="region" aria-labelledby="results-heading">
+      <h2 id="results-heading" class="results-heading" tabindex="-1">Result</h2>
+      <div id="replay-banner" class="replay-banner hidden" role="status"></div>
+      <!-- Which tab an answer came from, when it is not the tab on screen.
+           A quiet line rather than a box, and not a live region: the answer
+           it describes has not changed. -->
+      <p id="result-source" class="result-source hidden"></p>
+      <div id="result-stage" class="result-stage hidden" role="status"></div>
+      <!-- What is on screen while a query runs: one placeholder row per
+           engine that was asked, and the clock. -->
+      <div id="result-waiting" class="result-waiting hidden" aria-hidden="true">
+        <div class="waiting-head">
+          <span id="waiting-title">Running the selected engines</span>
+          <span id="waiting-elapsed" class="waiting-elapsed"></span>
+        </div>
+        <p class="waiting-note">First query after idle: about 30 s.<button type="button" class="info-btn" aria-expanded="false" aria-controls="i-waiting"><span aria-hidden="true">i</span><span class="visually-hidden">About: the first query after idle</span></button></p>
+        <div class="info-body hidden" id="i-waiting">The encoders load on the first call after an idle period.</div>
+        <div id="waiting-rows" class="waiting-rows"></div>
+      </div>
+      <div id="mode-banner" class="mode-banner hidden" role="status"></div>
+      <div id="run-line" class="run-line hidden"></div>
+      <h3 id="map-heading" class="minor-heading">Map</h3>
+      <p id="map-keys" class="visually-hidden">Arrow keys pan the map while it has focus; Tab moves past it. Every place on it is listed with its coordinate below.</p>
+      <div id="map" role="group" aria-labelledby="map-heading" aria-describedby="map-keys map-list"></div>
+      <p id="map-summary" class="visually-hidden" aria-live="polite"></p>
+      <div id="map-legend" class="map-legend hidden" role="group" aria-label="Map legend">
+        <span class="legend-item" data-legend="fused"><span class="legend-swatch fused"></span>Fused prediction</span>
+        <span class="legend-item" data-legend="consensus"><span class="legend-swatch consensus"></span>Per-level consensus</span>
+        <span class="legend-item" data-legend="muted"><span class="legend-swatch muted"></span>No place named in the text</span>
+        <span class="legend-item" data-legend="line"><span class="legend-swatch line"></span>Distance between them</span>
+        <span class="legend-item" data-legend="radius"><span class="legend-swatch radius"></span><span id="legend-radius">Flag radius</span></span>
+        <span class="legend-item legend-draft hidden" data-legend="draft"><span class="legend-swatch draft"></span>Drafted coordinate, not saved yet</span>
+        <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-legend">
+          <span aria-hidden="true">i</span><span class="visually-hidden">About: the map legend</span>
+        </button>
+        <div class="info-body hidden" id="i-legend">
+          <dl class="info-list">
+            <dt>Fused prediction</dt>
+            <dd>P marks a post-level place, and U a user-level one.</dd>
+            <dt>Per-level consensus</dt>
+            <dd>The pair the verification flag compares.</dd>
+            <dt>No place named in the text</dt>
+            <dd>The gazetteer found no catalogue place or alias. The prediction rests on the engines that always answer.</dd>
+            <dt>Distance between them</dt>
+            <dd>Drawn along the great circle, the path the printed distance measures.</dd>
+            <dt>Flag radius</dt>
+            <dd>Drawn around the post-level consensus. A user-level place outside it raises the flag.</dd>
+          </dl>
+        </div>
+      </div>
+      <div id="map-notice" class="map-notice hidden"></div>
+      <div id="near-miss-note" class="near-miss-note hidden" role="status"></div>
+      <!-- The flag sits directly under the map legend. The coordinate list
+           follows it, and moves above it when the map cannot be loaded. -->
+      <div id="disagreement-banner" class="disagreement-banner hidden" role="status"
+           aria-labelledby="flag-heading" tabindex="-1">
+        <h3 id="flag-heading" class="flag-heading">Verification flag</h3>
+        <div class="disagreement-headline">
+          <span class="disagreement-text"></span>
+        </div>
+        <p class="flag-caveat">A prompt for review, not a finding.<button type="button" class="info-btn" aria-expanded="false" aria-controls="i-flag-caveat"><span aria-hidden="true">i</span><span class="visually-hidden">About: what the flag means</span></button></p>
+        <div class="info-body hidden" id="i-flag-caveat">Most often one of the two predictions is wrong. What the candidate causes mean, and which places are compared, is below.</div>
+        <div id="flag-gazetteer-note" class="flag-gazetteer-note hidden" role="note"></div>
+        <details class="disagreement-why">
+          <summary>What the candidate causes mean, and which places are compared</summary>
+          <ul>
+            <li><b>One of the two predictions is wrong.</b> Both levels answer from the same closed catalogue, and each is right about half the time, so two wrong answers land far apart more often than a real move does. This is the most common cause.</li>
+            <li><b>The post is about another place.</b> The post-level engines read what a post is about, not where it was sent from. An account writing from abroad about a flood at home is the case this misreads most often.</li>
+            <li><b>Travel post.</b> The account holder is visiting a different place from where they normally post.</li>
+            <li><b>Shared or compromised account.</b></li>
+            <li><b>Misleading geotag.</b> The post claims a place it is not from.</li>
+          </ul>
+          <p class="flag-next">
+            Four things are worth checking. The posting times against local
+            time in each place, a reverse image search on any media, the
+            account's age and posting history, and whether unrelated accounts
+            report the same event from the same place.
+          </p>
+          <p class="flag-blind">
+            GeoLens reads only the text of the post and of the timeline, and
+            no images, metadata, timestamps, account age or network.
+          </p>
+          <p>
+            The flag compares the <b>consensus</b> place of each level, that
+            is, every engine's top prediction weighted by its confidence. The fused
+            prediction shown below is a different quantity, the sum of each
+            engine's top-k scores (or reciprocal rank fusion), so the two can
+            name different places for the same level. For the same reason, the
+            flag does not depend on the fusion method selected in the input panel.
+          </p>
+          <p id="flag-distance-method" class="flag-distance-method"></p>
+        </details>
+        <p id="flag-error-rate" class="flag-error-rate"></p>
+      </div>
+
+      <div id="map-list-wrap" class="map-list-wrap hidden">
+        <h3 id="map-list-heading" class="minor-heading">Predicted places and their coordinates</h3>
+        <ul id="map-list" class="map-list" aria-labelledby="map-list-heading"></ul>
+      </div>
+
+      <div id="agreement-note" class="agreement-note hidden" role="status"></div>
+
+      <!-- The headline result at each level. -->
       <div id="ensembles" class="ensembles hidden">
-        <h2 class="section-title">Ensemble verdict</h2>
+        <h3 class="section-title">Fused prediction</h3>
+        <details class="data-handling" id="fusion-note">
+          <summary>How the fused prediction is computed</summary>
+          <p>
+            Fused prediction: the sum of each engine's top-k scores, or
+            reciprocal rank fusion when that is selected. The verification flag
+            compares a different quantity, the per-level consensus, which is each
+            engine's top prediction weighted by its confidence, so the two can
+            name different cities. Engine scores are not calibrated
+            probabilities. An LLM confidence is self-reported, and an encoder
+            score is a softmaxed cosine similarity.
+          </p>
+        </details>
         <div id="ensemble-cards" class="ensemble-cards"></div>
       </div>
 
-      <!-- Optional comparison: ensemble vs best single engine in each bucket -->
+      <!-- Optional: the fused prediction against the best single engine. -->
       <div id="comparison" class="comparison hidden">
-        <h2 class="section-title">Ensemble vs. best single engine</h2>
+        <h3 class="section-title">Fused prediction vs. best single engine</h3>
         <div id="comparison-rows"></div>
       </div>
 
-      <!-- Per-engine breakdown, collapsible by granularity -->
+      <!-- Every engine's own answer, grouped by level. -->
       <div id="per-engine-section" class="per-engine-section hidden">
-        <h2 class="section-title">All engines (<span id="engine-count">0</span>)</h2>
+        <h3 class="section-title">All engines (<span id="engine-count">0</span>)</h3>
+        <p id="reach-summary" class="reach-summary hidden"></p>
         <details class="engine-group" data-bucket="post" open>
-          <summary>Post-level engines (<span class="bucket-count" data-bucket="post">0</span>)</summary>
+          <summary>Post-level engines (<span class="bucket-count" data-bucket="post">0</span>)<span class="bucket-state" data-bucket="post"></span></summary>
           <div class="engine-cards" data-bucket="post"></div>
         </details>
         <details class="engine-group" data-bucket="user">
-          <summary>User-level engines (<span class="bucket-count" data-bucket="user">0</span>)</summary>
+          <summary>User-level engines (<span class="bucket-count" data-bucket="user">0</span>)<span class="bucket-state" data-bucket="user"></span></summary>
           <div class="engine-cards" data-bucket="user"></div>
         </details>
+        <p id="reference-provenance" class="reference-provenance hidden"></p>
       </div>
     </section>
   </main>
 
+  </div><!-- /panel-demo -->
+
+  <section id="batch-panel" class="batch-panel hidden" role="tabpanel"
+           aria-labelledby="tab-batch" data-task="batch">
+    <div class="batch-intro">
+      <!-- A panel that a tab names carries the tab's name as its heading. -->
+      <h2>Bulk Evaluation</h2>
+      <p>
+        Upload a CSV to run every selected engine over many rows.<button type="button" class="info-btn" aria-expanded="false" aria-controls="i-bulk-intro"><span aria-hidden="true">i</span><span class="visually-hidden">About: what a bulk run does</span></button>
+      </p>
+      <div class="info-body hidden" id="i-bulk-intro">A ground-truth place column is optional, and with one the run is scored. Both levels of fusion run in the same pass.</div>
+      <p>
+        <span id="batch-limits">Up to 50 rows.</span><button type="button" class="info-btn" aria-expanded="false" aria-controls="i-bulk-limits"><span aria-hidden="true">i</span><span class="visually-hidden">About: the caps on a bulk run</span></button>
+      </p>
+      <div class="info-body hidden" id="i-bulk-limits"></div>
+      <p class="batch-links">
+        <a href="/static/example_test_set.csv" download>Example CSV (50 rows)</a>
+        <a href="https://github.com/kwanhui/public-geoLens-WSDM2027/blob/main/eval/README.md" target="_blank" rel="noopener">Format spec</a>
+      </p>
+    </div>
+
+    <div class="note-line">
+      <p class="privacy-notice">Text is sent to OpenAI and Anthropic.</p>
+      <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-privacy-bulk">
+        <span aria-hidden="true">i</span><span class="visually-hidden">About: where the upload goes</span>
+      </button>
+    </div>
+    <div class="info-body hidden" id="i-privacy-bulk">Choosing "Local engines only" in Engines keeps every call on this server. GeoLens stores nothing you submit.</div>
+    <p class="row-id-note">Use row ids that do not identify an account.</p>
+
+    <div class="batch-actions">
+      <label class="batch-file-label" for="batch-file">CSV file</label>
+      <input type="file" id="batch-file" accept=".csv,text/csv">
+      <button id="batch-run-btn" class="primary" disabled>Run bulk evaluation</button>
+      <span class="with-note">
+        <label class="fusion-select">
+          <span>Engines</span>
+          <select id="batch-engine-preset">
+            <option value="all">All engines</option>
+            <option value="local">Local engines only</option>
+          </select>
+        </label>
+        <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-bulk-engines">
+          <span aria-hidden="true">i</span><span class="visually-hidden">About: Engines</span>
+        </button>
+        <span class="info-body hidden" id="i-bulk-engines">Which engines run on the upload. With "Local engines only" no text leaves this server.</span>
+      </span>
+      <span id="batch-rowcount" class="batch-meta"></span>
+    </div>
+
+    <div id="batch-file-note" class="batch-file-note hidden"></div>
+
+    <div id="batch-status" class="batch-status hidden" role="alert" tabindex="-1"></div>
+
+    <ul id="batch-warnings" class="run-warnings hidden" role="status" aria-label="Warnings about this run"></ul>
+
+    <div id="batch-mode-banner" class="mode-banner hidden" role="status"></div>
+
+    <!-- The buttons are their own row, so the note opens under all four
+         rather than beside them. -->
+    <div id="batch-downloads" class="batch-downloads hidden">
+      <div class="download-row">
+        <button id="dl-results-csv" class="secondary">Per-row results (CSV)</button>
+        <button id="dl-geojson" class="secondary">GeoJSON (<abbr title="World Geodetic System 1984">WGS84</abbr>)</button>
+        <button id="dl-manifest" class="secondary">Run manifest (JSON)</button>
+        <button id="dl-summary-tex" class="secondary hidden">Copy LaTeX table</button>
+        <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-downloads">
+          <span aria-hidden="true">i</span><span class="visually-hidden">About: the four downloads</span>
+        </button>
+      </div>
+      <div class="info-body hidden" id="i-downloads">
+        <dl class="info-list">
+          <dt>Per-row results</dt>
+          <dd>One line per uploaded row, with every engine's answer and its distance to the truth.</dd>
+          <dt>GeoJSON</dt>
+          <dd>RFC 7946, one feature per row, level and engine, in WGS84 decimal degrees.</dd>
+          <dt>Run manifest</dt>
+          <dd>Model versions, catalogue hash, k, fusion method and timestamp.</dd>
+          <dt>LaTeX table</dt>
+          <dd>The per-engine summary below, as a booktabs tabular.</dd>
+        </dl>
+      </div>
+      <span id="geojson-coverage" class="batch-meta"></span>
+    </div>
+
+    <div id="batch-rollup" class="batch-rollup hidden">
+      <h3>Predicted-place distribution</h3>
+      <!-- The column glosses are `title=` attributes, which a touch screen
+           cannot reach, so one note per table repeats them as a list.
+           app.js builds it from those same attributes. -->
+      <div class="table-note">
+        <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-rollup-columns">
+          <span aria-hidden="true">i</span><span class="visually-hidden">About: this table's columns</span>
+        </button>
+        <div class="info-body hidden" id="i-rollup-columns"></div>
+      </div>
+      <p class="per-bucket-note">
+        <span id="rollup-source-note"></span><button type="button" class="info-btn" aria-expanded="false" aria-controls="i-rollup"><span aria-hidden="true">i</span><span class="visually-hidden">About: what the table counts</span></button>
+      </p>
+      <div class="info-body hidden" id="i-rollup">Where the corpus places its posts. Each count is split by whether the gazetteer found a catalogue place in the row's text. These are raw post counts and not rates.</div>
+      <label class="fusion-select">
+        <span>Count</span>
+        <select id="rollup-source">
+          <option value="fused">Fused prediction, per level</option>
+        </select>
+      </label>
+      <div class="per-bucket-scroll">
+        <table class="summary-table rollup-table">
+          <caption class="visually-hidden">How many rows each place was predicted for, at each level, split by whether the gazetteer found a catalogue place in the row's text.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Place</th>
+              <th scope="col">Post-level</th>
+              <th scope="col" title="Rows whose post named a catalogue place">names a place</th>
+              <th scope="col" title="Rows whose post named none">no place named</th>
+              <th scope="col">User-level</th>
+              <th scope="col" title="Rows whose timeline named a catalogue place">names a place</th>
+              <th scope="col" title="Rows whose timeline named none">no place named</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div id="batch-summary" class="batch-summary hidden">
+      <h3>Per-engine summary</h3>
+      <div class="table-note">
+        <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-engine-columns">
+          <span aria-hidden="true">i</span><span class="visually-hidden">About: this table's columns</span>
+        </button>
+        <div class="info-body hidden" id="i-engine-columns"></div>
+      </div>
+      <div class="summary-meta"></div>
+      <div class="per-bucket-scroll">
+      <table class="summary-table" id="engine-summary-table">
+        <caption class="visually-hidden">Accuracy, rank, distance error, abstentions, latency and estimated cost for each engine over the uploaded rows.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Engine</th>
+            <th scope="col"><abbr title="Share of scored rows whose top prediction is the truth">Acc@1</abbr></th>
+            <th scope="col"><abbr title="Share of scored rows holding the truth in the first five candidates">Acc@5</abbr></th>
+            <th scope="col" title="Mean rank of the truth where it was in the list, and how many rows">Mean rank (found)</th>
+            <th scope="col" title="Median great-circle error, over rows where the engine named a place">Median km err.</th>
+            <th scope="col" title="Share within 161 km of the truth">Acc@161km</th>
+            <th scope="col" title="Rows where the engine named no place">Abstained</th>
+            <th scope="col">Median latency</th>
+            <th scope="col">Total cost</th>
+            <th scope="col" title="Rows the engine was scored on">n</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      </div>
+      <h3 class="table-heading">Fusion summary</h3>
+      <div class="table-note">
+        <button type="button" class="info-btn" aria-expanded="false" aria-controls="i-fusion-columns">
+          <span aria-hidden="true">i</span><span class="visually-hidden">About: this table's columns</span>
+        </button>
+        <div class="info-body hidden" id="i-fusion-columns"></div>
+      </div>
+      <div class="per-bucket-scroll">
+      <table class="summary-table ensemble-table">
+        <caption class="visually-hidden">The same measures for the fused prediction at each level.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Fusion</th>
+            <th scope="col"><abbr title="Share of scored rows whose top prediction is the truth">Acc@1</abbr></th>
+            <th scope="col"><abbr title="Share of scored rows holding the truth in the first five candidates">Acc@5</abbr></th>
+            <th scope="col" title="Mean rank of the truth where it was in the list, and how many rows">Mean rank (found)</th>
+            <th scope="col" title="Median great-circle error of the fused prediction">Median km err.</th>
+            <th scope="col" title="Share within 161 km of the truth">Acc@161km</th>
+            <th scope="col">Differs from best single</th>
+            <th scope="col" title="Rows the fusion was scored on">n</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      </div>
+      <details class="per-bucket-wrap">
+        <summary>Per-difficulty breakdown (Acc@1 by bucket)</summary>
+        <p class="per-bucket-note">Buckets come from a <code>bucket</code>/<code>tag</code> column, or are derived from the id prefix (e.g. <code>hard-sem-3</code> &rarr; <code>hard-sem</code>).</p>
+        <div class="per-bucket-scroll">
+          <table class="summary-table per-bucket-table">
+            <caption class="visually-hidden">Accuracy at rank 1 for each engine, split by difficulty bucket.</caption>
+            <thead><tr><th scope="col">Bucket</th><th scope="col">n</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+
+    <div id="batch-rows" class="batch-rows hidden">
+      <h3>Per-row results <span class="batch-meta" id="rows-count"></span></h3>
+      <div class="per-bucket-scroll">
+      <table class="rows-table">
+        <caption class="visually-hidden">One line per uploaded row: its ground truth, whether it ran, the fused prediction at each level, and whether the verification flag was raised.</caption>
+        <thead>
+          <tr>
+            <th scope="col">id</th>
+            <th scope="col" title="Post-level truth, and the account's home place where the file gives one">ground truth</th>
+            <th scope="col">status</th>
+            <th scope="col">post fusion</th>
+            <th scope="col">user fusion</th>
+            <th scope="col">verification flag</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      </div>
+    </div>
+  </section>
+  </div><!-- /content -->
+
   <footer>
+    <span class="footer-paper">
+      Companion to "GeoLens: A Workbench for Comparing Zero-Shot Social Media Geolocation Engines", WSDM 2027 Demonstrations Track.<button type="button" class="info-btn" aria-expanded="false" aria-controls="i-footer"><span aria-hidden="true">i</span><span class="visually-hidden">About: the companion paper</span></button>
+    </span>
+    <span class="info-body hidden" id="i-footer">By Kwan Hui Lim, Menglin Li, Kunrong Li, Roy Ka-Wei Lee and Zhu Sun. Submitted to the WSDM 2027 Demonstrations Track.</span>
+    <!-- Each label keeps its own engines, with a rule between the two
+         groups, so the last frozen encoder does not run into the next
+         label. The note follows its button with nothing in between. -->
     <span class="footer-engines">
-      Few-shot / zero-shot: <span class="engine-pill" data-family="research">ContrastGeo</span>
-      <span class="engine-pill" data-family="research">FewUser</span>
-      <span class="engine-pill" data-family="research">RetrieveZero</span>
-      Public:
-      <span class="engine-pill" data-family="gazetteer">Gazetteer</span>
-      <span class="engine-pill" data-family="gpt">GPT-4o-mini</span>
-      <span class="engine-pill" data-family="claude">Claude Haiku</span>
+      <span class="footer-set">
+        <span class="footer-label">Frozen encoders:<button type="button" class="info-btn" aria-expanded="false" aria-controls="i-frozen"><span aria-hidden="true">i</span><span class="visually-hidden">About: Frozen encoders</span></button></span>
+        <span class="info-body hidden" id="i-frozen">Hosted instantiations of the published methods, run with no support examples.</span>
+        <span id="footer-frozen" class="footer-group"></span>
+      </span>
+      <span class="footer-set">
+        <span class="footer-label">Public baselines:</span>
+        <span id="footer-baselines" class="footer-group"></span>
+      </span>
     </span>
   </footer>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
   <script src="/static/app.js"></script>
+  <script src="/static/replay.js"></script>
 </body>
 </html>

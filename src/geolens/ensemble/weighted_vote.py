@@ -1,24 +1,18 @@
 """Granularity-aware fusion across engines.
 
-Within each granularity bucket (post-level, user-level), ensemble the
-contributing engines' top-k predictions. We do NOT ensemble across
-granularities: that's cross-task verification, not ensembling, and a
-naive vote there would mix two different questions.
+Within each granularity bucket, post-level and user-level, the contributing
+engines' top-k predictions are fused. Nothing is fused across granularities,
+because that comparison is the cross-task verification the flag performs.
 
-Two fusion methods are offered because the per-engine confidence scores are
-NOT on a comparable scale (a gazetteer's normalised substring count, an LLM's
-self-reported confidence, and an encoder's softmaxed cosine similarity mean
-different things):
+Two methods are offered. ``weighted`` sums each engine's top-k probability
+mass, with uniform weights by default. ``rrf`` is Reciprocal Rank Fusion
+(Cormack et al., SIGIR 2009), which uses only rank position, so the
+incomparable score scales of a substring count, a self-reported LLM confidence
+and a softmaxed cosine similarity do not distort the result. That is why it is
+the default.
 
-- ``weighted``: sum each engine's top-k probability mass (uniform weights by
-  default). Simple, but a method that emits large raw scores can dominate.
-- ``rrf``: Reciprocal Rank Fusion (Cormack et al., SIGIR 2009). Uses only the
-  rank position of each city within an engine's list, so incomparable score
-  scales cannot distort the result. Usually the safer choice for
-  heterogeneous rankers.
-
-Returns an EnsembleResult that the UI can render first-class above the
-per-engine cards, plus the delta vs. the best single engine in the bucket.
+An EnsembleResult carries the fused ranking and the difference against the best
+single engine in the bucket.
 """
 
 from __future__ import annotations
@@ -34,6 +28,15 @@ FusionMethod = Literal["weighted", "rrf"]
 
 # Conventional RRF damping constant (Cormack et al. 2009 use 60).
 RRF_K = 60
+
+
+def as_fusion_method(value: str) -> FusionMethod:
+    """Narrow a caller-supplied string to a supported fusion method.
+
+    Requests and CLI flags carry a plain string; anything other than ``rrf``
+    runs the weighted sum, which is what `ensemble` has always done.
+    """
+    return "rrf" if value == "rrf" else "weighted"
 
 
 @dataclass
@@ -98,8 +101,12 @@ def ensemble(
     """
 
     weights = weights or {}
+    # A failed call carries no top-k, so it cannot contribute a city. The
+    # `usable` test says so explicitly rather than relying on that.
     contributing: list[tuple[str, Prediction]] = [
-        (n, p) for n, p in per_engine.items() if granularities.get(n) == target and p.top_k
+        (n, p)
+        for n, p in per_engine.items()
+        if granularities.get(n) == target and p.usable and p.top_k
     ]
     if not contributing:
         return None

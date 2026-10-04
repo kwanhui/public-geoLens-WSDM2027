@@ -1,14 +1,11 @@
 """RetrieveZero adapter: zero-shot user geolocation with LLM-retrieved knowledge.
 
-Two modes:
-- **Stub**: deterministic placeholder.
-- **Real**: frozen-encoder cosine-similarity using intfloat/e5-large (the
-  encoder the RetrieveZero paper uses). Cities are described using the
-  Modular Retrieval profiles produced by the cold-start onboarding wizard
-  (aliases / landmarks / foods), which are the same MoR fields the paper's
-  pre-training step generates from an LLM. When a city has no MoR profile
-  cached yet, we fall back to its plain name, so RetrieveZero has more to
-  work with for any city the user has onboarded.
+Placeholder mode returns a deterministic stand-in. Real mode is frozen-encoder
+cosine similarity over `intfloat/e5-large`, the encoder the RetrieveZero paper
+uses. A place is described from the Modular Retrieval profile the cold-start
+wizard produces, that is, its aliases, landmarks and foods; where a place has
+no cached profile the passage is the bare place name. A RetrieveZero
+prediction therefore changes for any place the operator has onboarded.
 """
 
 from __future__ import annotations
@@ -17,8 +14,9 @@ import logging
 
 from geolens.engines._cities import DEFAULT_CITIES
 from geolens.engines._stubs import stub_predict
-from geolens.engines.base import Engine, GeolocateInput, Prediction
+from geolens.engines.base import Engine, GeolocateInput, Prediction, failed_prediction
 from geolens.onboarding.wizard import _load_cached as _load_cached_profile
+from geolens.paths import ONBOARDED_CITIES, cache_subdir
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +72,9 @@ class RetrieveZeroEngine(Engine):
 
         text = self._query_text(payload)
         if not text:
-            return stub_predict(self.name, payload, k, sleep_ms=10.0, note="stub: RetrieveZero (no input)")
+            return failed_prediction(
+                self.name, error_class="NoInput", detail="no user timeline"
+            )
 
         try:
             from geolens.engines._encoder import encoder_similarity_predict
@@ -98,9 +98,7 @@ class RetrieveZeroEngine(Engine):
 
 def _describe_fn_cache_id() -> str:
     """Cache key salt that reflects the current set of onboarded cities."""
-    from pathlib import Path
-
-    base = Path.home() / ".geolens" / "onboarded_cities"
+    base = cache_subdir(ONBOARDED_CITIES)
     if not base.exists():
         return "mor:empty"
     files = sorted(p.name for p in base.glob("*.json"))

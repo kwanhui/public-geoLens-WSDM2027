@@ -1,29 +1,31 @@
 #!/usr/bin/env python3
-"""Fair, reproducible scoring of the WNUT-2016 eval set.
+"""Scoring of the WNUT-2016 evaluation set.
 
-Every engine is run once over the full CSV, then each engine is scored only on
-the rows where its task is well-defined:
+Every engine is run once over the full CSV and then scored only on the rows
+where its task is well defined. Post-level engines are scored on the `intl`,
+`hard-sem` and `ooc` buckets, where the ground truth is the post's own city.
+User-level engines are scored on `userhome`, where it is the account's home
+city. The `disagree` bucket is used for the cross-task banner alone, because
+those rows carry two truths and a single-label accuracy over them would score
+one level against the other's truth. Banner precision and recall are computed
+over all rows, with the `disagree` rows as the positives.
 
-* post-level engines on the post-level buckets (intl, hard-sem, ooc), where
-  ground truth is the post's own city;
-* user-level engines on the userhome bucket, where ground truth is the user's
-  home city;
-* the disagree bucket is used ONLY for the cross-task banner: those rows carry
-  two truths (the post's city and the user's home), so counting them in a
-  single-label accuracy would unfairly penalise whichever granularity is not
-  being targeted. Banner precision/recall is computed over all rows (the
-  disagree rows are the positives).
-
-It also runs paired McNemar tests between engine pairs within each section, and
-writes a results JSON (per-section metrics + banner + significance + the run
-manifest with model versions and catalogue hash) so the reported numbers are
-attributable and reproducible.
+The script also runs paired McNemar tests between engine pairs within each
+section, and writes a results JSON holding the per-section metrics, the banner,
+the significance tests and the run manifest.
 
 Run:
     python3 eval/adapters/run_wnut_eval.py \
         --csv eval/wnut2016_test_set.csv \
-        --env path/to/your/.env \
+        --env .env \
         --out eval/results/wnut2016.json
+
+`--env` is optional and points at whatever file holds your OPENAI_API_KEY and
+ANTHROPIC_API_KEY; with the keys already in the environment, leave it out.
+
+The committed results under eval/results/ were produced at tag
+`wnut2016-eval-3803853`. A run at HEAD is a different run: see the errata at
+the end of eval/README.md.
 """
 
 from __future__ import annotations
@@ -31,7 +33,6 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
-import math
 
 POST_BUCKETS = {"intl", "hard-sem", "ooc"}
 USER_BUCKETS = {"userhome"}
@@ -52,6 +53,8 @@ def _correct(row, engine: str) -> bool | None:
 def _mcnemar(rows, a: str, b: str) -> dict:
     """Paired McNemar test (continuity-corrected) between two engines over the
     rows where both produced a prediction against a ground truth."""
+    from geolens.stats import mcnemar
+
     b_only = c_only = 0  # b_only: a right & b wrong; c_only: a wrong & b right
     for r in rows:
         ca, cb = _correct(r, a), _correct(r, b)
@@ -64,9 +67,7 @@ def _mcnemar(rows, a: str, b: str) -> dict:
     n = b_only + c_only
     if n == 0:
         return {"a": a, "b": b, "discordant": 0, "stat": 0.0, "p_value": 1.0}
-    stat = (abs(b_only - c_only) - 1) ** 2 / n
-    # chi-square survival with 1 dof = erfc(sqrt(stat/2))
-    p = math.erfc(math.sqrt(stat / 2.0))
+    stat, p = mcnemar(b_only, c_only)
     return {"a": a, "b": b, "a_only_correct": b_only, "b_only_correct": c_only,
             "discordant": n, "stat": round(stat, 3), "p_value": round(p, 4)}
 
@@ -74,7 +75,14 @@ def _mcnemar(rows, a: str, b: str) -> dict:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Fair WNUT-2016 eval scorer")
     p.add_argument("--csv", default="eval/wnut2016_test_set.csv")
-    p.add_argument("--env", default=None, help="Path to a .env with the API keys to load.")
+    p.add_argument(
+        "--env",
+        default=None,
+        help=(
+            "Path to a .env holding OPENAI_API_KEY and ANTHROPIC_API_KEY. "
+            "Omit it when the keys are already in the environment."
+        ),
+    )
     p.add_argument("--out", default="eval/results/wnut2016.json")
     p.add_argument("-k", type=int, default=5)
     p.add_argument("--ensemble-method", default="weighted", choices=["weighted", "rrf"])
@@ -88,25 +96,11 @@ def main(argv: list[str] | None = None) -> int:
     from geolens.batch.metrics import bucket_of, compute_summary
     from geolens.batch.runner import run_batch
     from geolens.cli import _read_eval_csv
-    from geolens.engines import (
-        ClaudeClassifierEngine, ContrastGeoEngine, FewUserEngine,
-        GazetteerEngine, LLMClassifierEngine, RetrieveZeroEngine,
-    )
-    from geolens.engines._cities import DEFAULT_CITIES
+    from geolens.engines.registry import build_engines
     from geolens.manifest import build_manifest
 
-    catalogue = list(DEFAULT_CITIES)
-    engines = {
-        "contrastgeo": ContrastGeoEngine(cities=catalogue),
-        "fewuser": FewUserEngine(cities=catalogue),
-        "retrievezero": RetrieveZeroEngine(cities=catalogue),
-        "gazetteer_post": GazetteerEngine(granularity="post", cities=catalogue),
-        "gazetteer_user": GazetteerEngine(granularity="user", cities=catalogue),
-        "gpt4o_mini_post": LLMClassifierEngine(granularity="post", cities=catalogue),
-        "gpt4o_mini_user": LLMClassifierEngine(granularity="user", cities=catalogue),
-        "claude_haiku_post": ClaudeClassifierEngine(granularity="post", cities=catalogue),
-        "claude_haiku_user": ClaudeClassifierEngine(granularity="user", cities=catalogue),
-    }
+    # The same roster the server and the CLI run, from one registry.
+    engines, catalogue = build_engines()
 
     inputs = _read_eval_csv(args.csv)
     print(f"running {len(inputs)} rows x {len(engines)} engines ...", flush=True)

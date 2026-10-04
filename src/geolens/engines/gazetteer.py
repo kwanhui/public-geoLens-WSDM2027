@@ -1,10 +1,9 @@
-"""Gazetteer / string-match baseline.
+"""Gazetteer baseline: count catalogue names, aliases and landmarks in the text.
 
-Classical pre-neural geolocation baseline: count substring matches of each
-city's name and onboarded aliases in the input text, return top-k by count.
-No external dependencies and very fast. Does well when a post names the place
-outright; misses indirect cues ("kaya toast" for Singapore), cannot tell
-ambiguous names apart (which Manchester?), and has no handling of typos.
+Each place scores by how often its name, its cached aliases and, for an
+onboarded place, its cached landmarks occur in the input; a landmark counts a
+quarter of a name match. The ranked list holds only the places the text named.
+It is not padded up to k, and an abstention carries no place.
 """
 
 from __future__ import annotations
@@ -14,8 +13,14 @@ import time
 
 from geolens.engines._cities import DEFAULT_CITIES
 from geolens.engines._stubs import stub_predict
-from geolens.engines.base import Engine, GeolocateInput, Prediction
+from geolens.engines.base import Engine, GeolocateInput, Prediction, failed_prediction
 from geolens.onboarding.wizard import _load_cached as _load_cached_profile
+
+# A landmark is weaker evidence than the place's own name: a post naming the
+# river a town sits on has said something about where it is, but less than a
+# post naming the town. Only an onboarded place has landmarks, because a
+# built-in place has no profile, so no evaluated number moves.
+LANDMARK_WEIGHT = 0.25
 
 
 def _aliases_for(city: str) -> list[str]:
@@ -25,6 +30,14 @@ def _aliases_for(city: str) -> list[str]:
     if profile is not None:
         out.extend(a for a in profile.aliases if a and a != city)
     return out
+
+
+def _landmarks_for(city: str) -> list[str]:
+    """Cached landmarks for an onboarded place; empty for a built-in one."""
+    profile = _load_cached_profile(city)
+    if profile is None:
+        return []
+    return [m for m in profile.landmarks if m and m.strip()]
 
 
 def _count_matches(text: str, terms: list[str]) -> tuple[int, list[str]]:
@@ -51,9 +64,38 @@ def _count_matches(text: str, terms: list[str]) -> tuple[int, list[str]]:
     return n, matched
 
 
+def _evidence(
+    top_k: list[tuple[str, float]],
+    matched_by_city: dict[str, list[str]],
+    landmarks_by_city: dict[str, list[str]],
+) -> str:
+    """What the top place matched on, and which other places the text also named.
+
+    A text can name two catalogue places, so the evidence names the terms
+    behind the winner and the other places the text also named.
+    """
+    if not top_k:
+        return ""
+    first = top_k[0][0]
+    parts = []
+    names = matched_by_city.get(first, [])
+    marks = landmarks_by_city.get(first, [])
+    if names:
+        parts.append("matched: " + ", ".join(names[:3]))
+    if marks:
+        parts.append("matched landmark: " + ", ".join(marks[:3]))
+    others = [c for c, _ in top_k[1:] if matched_by_city.get(c) or landmarks_by_city.get(c)]
+    if others:
+        parts.append("the text also names " + ", ".join(others[:3]))
+    return "; ".join(parts)
+
+
 class GazetteerEngine(Engine):
     name = "gazetteer"
     granularity = "post"  # works for either; default to post
+    # It needs no key, no model download and no network, so placeholder mode
+    # leaves it real and a keyless clone receives one real answer.
+    needs_credentials = False
 
     def __init__(
         self,
@@ -62,8 +104,6 @@ class GazetteerEngine(Engine):
         cities: list[str] | None = None,
         granularity: str = "post",
     ) -> None:
-        # Gazetteer never needs to "stub" because it has no external deps,
-        # but honour stub mode for consistency with other engines.
         super().__init__(stub=stub)
         self.cities = cities or DEFAULT_CITIES
         self.granularity = granularity  # type: ignore[assignment]
@@ -81,42 +121,44 @@ class GazetteerEngine(Engine):
 
         text = self._query_text(payload)
         if not text:
-            return stub_predict(self.name, payload, k, sleep_ms=1.0, note="stub: gazetteer (no input)")
+            return failed_prediction(
+                self.name, error_class="NoInput", detail="no text for this granularity"
+            )
 
         start = time.perf_counter()
-        scores: list[tuple[str, int]] = []
+        scores: list[tuple[str, float]] = []
         matched_by_city: dict[str, list[str]] = {}
+        landmarks_by_city: dict[str, list[str]] = {}
         for city in self.cities:
             count, matched = _count_matches(text, _aliases_for(city))
-            scores.append((city, count))
+            hits, marks = _count_matches(text, _landmarks_for(city))
+            scores.append((city, count + hits * LANDMARK_WEIGHT))
             matched_by_city[city] = matched
+            landmarks_by_city[city] = marks
         scores.sort(key=lambda x: x[1], reverse=True)
         latency_ms = (time.perf_counter() - start) * 1000
 
         total = sum(s for _, s in scores) or 1
-        if scores[0][1] == 0:
-            # No city name appeared anywhere. Abstain rather than emit a
-            # confident-looking uniform guess: the operator should treat this
-            # as "no toponym found", not as a real low-confidence prediction.
-            top_k = [(scores[i][0], 1.0 / len(scores)) for i in range(min(k, len(scores)))]
+        # Only places the text actually named. Padding the list up to k
+        # would put a place that matched nothing into the fused ranking at
+        # the same score as the one that did match.
+        top_k = [(c, s / total) for c, s in scores[: min(k, len(scores))] if s > 0]
+
+        if not top_k:
+            # No city name appeared anywhere. Return no city at all: an
+            # abstention that names the first catalogue entry reads as a
+            # low-confidence prediction to any client that ignores the flag.
             return Prediction(
-                city=top_k[0][0],
-                confidence=float(top_k[0][1]),
-                top_k=[(c, float(p)) for c, p in top_k],
+                city="",
+                confidence=0.0,
+                top_k=[],
                 latency_ms=latency_ms,
                 cost_usd=0.0,
                 note="real:gazetteer (no toponym in text)",
                 abstain=True,
             )
 
-        top_k = [(c, s / total) for c, s in scores[: min(k, len(scores))] if s > 0]
-        # Pad if we found fewer than k cities with non-zero matches.
-        while len(top_k) < k and len(top_k) < len(scores):
-            next_idx = len(top_k)
-            top_k.append((scores[next_idx][0], 1.0 / total))
-
-        evidence_terms = matched_by_city.get(top_k[0][0], [])
-        evidence = "matched: " + ", ".join(evidence_terms[:3]) if evidence_terms else ""
+        evidence = _evidence(top_k, matched_by_city, landmarks_by_city)
         return Prediction(
             city=top_k[0][0],
             confidence=float(top_k[0][1]),

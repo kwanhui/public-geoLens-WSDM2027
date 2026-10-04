@@ -1,12 +1,10 @@
-"""FewUser adapter: user-level few-shot geolocation.
+"""FewUser adapter: user-level geolocation over a frozen encoder.
 
-Two modes (see `contrastgeo.py` for the broader picture):
-- **Stub**: deterministic placeholder.
-- **Real**: frozen-encoder cosine-similarity using sup-simcse-roberta-large
-  (the encoder the FewUser paper uses). User signal is built by joining the
-  user's recent posts with newline separators, which is the simplest way to
-  approximate FewUser's user-level aggregation without the trained user
-  encoder head.
+Placeholder mode returns a deterministic stand-in; see `contrastgeo.py` for
+how the two modes are selected. Real mode is frozen-encoder cosine similarity
+over `sup-simcse-roberta-large`, a related encoder and not the published one,
+since the FewUser manuscript reports SimCSE-BERT-large as its backbone. The
+user signal is the recent posts joined with newlines.
 """
 
 from __future__ import annotations
@@ -15,7 +13,7 @@ import logging
 
 from geolens.engines._cities import DEFAULT_CITIES
 from geolens.engines._stubs import stub_predict
-from geolens.engines.base import Engine, GeolocateInput, Prediction
+from geolens.engines.base import Engine, GeolocateInput, Prediction, failed_prediction
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +21,7 @@ ENCODER = "princeton-nlp/sup-simcse-roberta-large"
 
 
 def _describe_city(name: str) -> str:
-    """FewUser uses a slightly richer template: 'a user from <city>'."""
+    """The string FewUser embeds for a place: "a social media user from <name>"."""
     return f"a social media user from {name}"
 
 
@@ -55,7 +53,9 @@ class FewUserEngine(Engine):
 
         text = self._query_text(payload)
         if not text:
-            return stub_predict(self.name, payload, k, sleep_ms=10.0, note="stub: FewUser (no input)")
+            return failed_prediction(
+                self.name, error_class="NoInput", detail="no user timeline"
+            )
 
         try:
             from geolens.engines._encoder import encoder_similarity_predict

@@ -1,27 +1,46 @@
 """LLM-as-classifier adapter.
 
-Zero-shot prompted classification: given a post (or a user's recent posts),
-ask an LLM to pick one city from the catalogue. A common baseline these days,
-and often competitive with fine-tuned methods on out-of-distribution inputs.
-
-Default uses OpenAI gpt-4o-mini for cost (≈$0.0001 per query at typical post
-length). Falls back to stub if no `OPENAI_API_KEY` is set, or if the API
-errors out.
+Zero-shot prompted classification: given a post, or a user's recent posts, ask
+an LLM to pick one place from the closed catalogue. The default model is
+OpenAI gpt-4o-mini, roughly USD 0.0001 per query at typical post length,
+estimated from the listed prices in `geolens.pricing`. Without
+`OPENAI_API_KEY`, or when the call raises, the adapter returns a placeholder.
 """
 
 from __future__ import annotations
 
-import json
 import logging
+import os
 import time
 
 from geolens.engines._cities import DEFAULT_CITIES
+from geolens.engines._reply_json import extract_json_object, parse_confidence
 from geolens.engines._stubs import stub_predict
-from geolens.engines.base import Engine, GeolocateInput, Prediction
+from geolens.engines.base import (
+    Engine,
+    GeolocateInput,
+    Prediction,
+    failed_prediction,
+    no_catalogue_place_prediction,
+)
+from geolens.pricing import estimate_cost
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "gpt-4o-mini"
+API_KEY_ENV = "OPENAI_API_KEY"
+
+# What the call below actually sends. The run manifest reports these rather
+# than restating them, so it cannot claim a setting the request does not
+# carry.
+TEMPERATURE = 0.0
+MAX_TOKENS = 300
+RESPONSE_FORMAT = "json_object"
+SAMPLING_PARAMETERS: dict[str, object] = {
+    "temperature": TEMPERATURE,
+    "max_tokens": MAX_TOKENS,
+    "response_format": RESPONSE_FORMAT,
+}
 
 
 def _build_prompt(query_text: str, cities: list[str], k: int) -> str:
@@ -41,6 +60,8 @@ def _build_prompt(query_text: str, cities: list[str], k: int) -> str:
 class LLMClassifierEngine(Engine):
     name = "llm_gpt4o_mini"
     granularity = "post"  # works for both granularities; assignment is a UI choice
+    sampling_parameters = SAMPLING_PARAMETERS
+    calls_a_third_party = True
 
     def __init__(
         self,
@@ -69,35 +90,53 @@ class LLMClassifierEngine(Engine):
 
         text = self._query_text(payload)
         if not text:
-            return stub_predict(self.name, payload, k, sleep_ms=10.0, note=f"stub: {self.name} (no input)")
+            return failed_prediction(
+                self.name, error_class="NoInput", detail="no text for this granularity"
+            )
 
         try:
             from openai import OpenAI
         except ImportError as e:
-            logger.warning("openai not installed (%s); falling back to stub.", e)
+            logger.warning("openai not installed (%s); falling back to a placeholder.", e)
             return stub_predict(self.name, payload, k, sleep_ms=10.0, note=f"stub: {self.name} (no openai)")
 
         start = time.perf_counter()
-        client = OpenAI()
         try:
+            client = OpenAI()
             resp = client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": _build_prompt(text, self.cities, k)}],
                 response_format={"type": "json_object"},
-                temperature=0.0,
-                max_tokens=300,
+                temperature=TEMPERATURE,
+                max_tokens=MAX_TOKENS,
             )
-            data = json.loads(resp.choices[0].message.content or "{}")
+        except Exception as e:  # noqa: BLE001
+            elapsed = (time.perf_counter() - start) * 1000
+            if not os.getenv(API_KEY_ENV):
+                return stub_predict(
+                    self.name, payload, k, sleep_ms=10.0, note=f"stub: {self.name} (no api key)"
+                )
+            logger.warning("LLM classifier (%s) call failed: %s", self.model, e)
+            return failed_prediction(self.name, error_class=type(e).__name__, latency_ms=elapsed)
+
+        try:
+            data = extract_json_object(resp.choices[0].message.content or "")
             raw_top_k = data.get("top_k", [])
             usage = resp.usage
-            cost_usd = _estimate_cost(self.model, usage.prompt_tokens, usage.completion_tokens)
+            estimated = (
+                estimate_cost(self.model, usage.prompt_tokens, usage.completion_tokens)
+                if usage
+                else None
+            )
         except Exception as e:  # noqa: BLE001
-            logger.warning("LLM classifier (%s) failed: %s", self.model, e)
-            return stub_predict(self.name, payload, k, sleep_ms=10.0, note=f"stub: {self.name} (api error)")
+            elapsed = (time.perf_counter() - start) * 1000
+            logger.warning("LLM classifier (%s) reply could not be read: %s", self.model, e)
+            return failed_prediction(self.name, error_class=type(e).__name__, latency_ms=elapsed)
 
         latency_ms = (time.perf_counter() - start) * 1000
 
-        # Validate that the LLM picked from our city list.
+        # Keep only the places the reply picked from the catalogue, with a
+        # confidence inside the range the prompt asked for.
         valid_cities = {c.lower(): c for c in self.cities}
         top_k: list[tuple[str, float]] = []
         for entry in raw_top_k[:k]:
@@ -108,29 +147,19 @@ class LLMClassifierEngine(Engine):
                 city_canonical = valid_cities.get(str(city_raw).lower())
                 if city_canonical is None:
                     continue
-                top_k.append((city_canonical, float(conf)))
+                top_k.append((city_canonical, parse_confidence(conf)))
             except (TypeError, ValueError):
                 continue
 
         if not top_k:
-            return stub_predict(self.name, payload, k, sleep_ms=10.0, note=f"stub: {self.name} (parse error)")
+            return no_catalogue_place_prediction(self.name, latency_ms=latency_ms)
 
         return Prediction(
             city=top_k[0][0],
             confidence=top_k[0][1],
             top_k=top_k,
             latency_ms=latency_ms,
-            cost_usd=cost_usd,
+            cost_usd=estimated or 0.0,
+            cost_is_estimated=estimated is not None,
             note=f"real:{self.name} ({self.model})",
         )
-
-
-def _estimate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
-    """Rough cost estimator for OpenAI models. Updated 2026."""
-    # gpt-4o-mini: $0.15 / 1M input, $0.60 / 1M output
-    rates = {
-        "gpt-4o-mini": (0.15e-6, 0.60e-6),
-        "gpt-4o": (2.50e-6, 10.00e-6),
-    }
-    in_rate, out_rate = rates.get(model, (0.15e-6, 0.60e-6))
-    return prompt_tokens * in_rate + completion_tokens * out_rate

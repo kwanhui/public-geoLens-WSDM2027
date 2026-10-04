@@ -25,6 +25,15 @@ coverage.xml
 # Tests not needed in the runtime image
 tests/
 
+# Repo-level docs not needed in the image
+CHANGELOG.md
+docs/
+
+# Demo media that should never enter the image
+demo/*.mp4
+demo/*.mov
+demo/*.gif
+
 # OS / IDE
 .DS_Store
 .idea/

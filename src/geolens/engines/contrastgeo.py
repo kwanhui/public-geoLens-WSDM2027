@@ -1,14 +1,11 @@
-"""ContrastGeo adapter: post-level few-shot geolocation.
+"""ContrastGeo adapter: post-level geolocation over a frozen encoder.
 
-Two modes:
-- **Stub** (default; set `GEOLENS_STUB_MODE=1` or leave unset): deterministic
-  placeholder predictions, zero deps beyond the package itself. Used for
-  cold HF Space deploys and CI smoke tests.
-- **Real** (set `GEOLENS_STUB_MODE=0` or `GEOLENS_REAL_MODE=1`): frozen-encoder
-  cosine-similarity baseline using the same encoder as the published
-  ContrastGeo paper (sup-simcse-bert-large-uncased). This is the zero-shot
-  baseline that ContrastGeo improves on with prompt-aware contrastive
-  fine-tuning. No ContrastGeo checkpoint is published, so this is what runs.
+With `GEOLENS_STUB_MODE=1`, or the variable unset, the adapter returns
+deterministic stand-in predictions and needs nothing beyond the package, which
+is what a cold HF Space deploy runs under. With `GEOLENS_STUB_MODE=0` it runs
+frozen-encoder cosine similarity over `sup-simcse-bert-large-uncased`, the
+encoder of the published ContrastGeo paper. No trained checkpoint is
+published, so the zero-shot baseline is what runs here.
 """
 
 from __future__ import annotations
@@ -17,7 +14,7 @@ import logging
 
 from geolens.engines._cities import DEFAULT_CITIES
 from geolens.engines._stubs import stub_predict
-from geolens.engines.base import Engine, GeolocateInput, Prediction
+from geolens.engines.base import Engine, GeolocateInput, Prediction, failed_prediction
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +22,7 @@ ENCODER = "princeton-nlp/sup-simcse-bert-large-uncased"
 
 
 def _describe_city(name: str) -> str:
-    """ContrastGeo treats cities as plain class labels, no enrichment."""
+    """ContrastGeo treats cities as plain class labels, with no enrichment."""
     return name
 
 
@@ -57,7 +54,9 @@ class ContrastGeoEngine(Engine):
 
         text = self._query_text(payload)
         if not text:
-            return stub_predict(self.name, payload, k, sleep_ms=10.0, note="stub: ContrastGeo (no post)")
+            return failed_prediction(
+                self.name, error_class="NoInput", detail="no post text"
+            )
 
         try:
             from geolens.engines._encoder import encoder_similarity_predict
