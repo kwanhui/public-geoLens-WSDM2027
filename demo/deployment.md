@@ -87,20 +87,28 @@ inside the hour.
 
 ### One-time setup
 
-1. Create the Space at <https://huggingface.co/new-space>: owner `kwanhui`,
-   name `geo-lens`, SDK `Docker`, visibility Public, so a visitor can reach
-   it without an account.
+1. Create the Space at <https://huggingface.co/new-space>: SDK `Docker`,
+   hardware `CPU basic`, visibility Public, so a visitor can reach it
+   without an account. The hosted instance is the Space `kwanhui/geo-lens`
+   on `CPU basic`.
 2. Set the secrets and variables at *Space, Settings, Variables and
    secrets*: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` and
    `GEOLENS_OPERATOR_TOKEN` as secrets, and `GEOLENS_STUB_MODE=0` as a
    variable to turn on real inference. Everything in the table above is in
    the Dockerfile, and a Space variable overrides one of them.
 3. Cap both providers in their own dashboards.
+4. Push this repository to the Space with `src/geolens/data/build_commit.txt`
+   written, as step 4 of "Deploy to your own Hugging Face Space" in the
+   README shows. The file holds the commit the Space was built from, because
+   the Space builds from a copy with no `.git` and `GET /instance` and the run
+   manifests would otherwise report no commit. It is in `.gitignore`, so it
+   is added with `git add -f` on the commit pushed to the Space only.
 
 ### What the Dockerfile does
 
 It builds a slim Python 3.11 image, installs the package with the `real`
-extra, bakes the commit in, sets the table above, and runs
+extra, takes the commit from `src/geolens/data/build_commit.txt` or from the
+`GEOLENS_GIT_COMMIT` build argument, sets the table above, and runs
 `python -m geolens.app --host 0.0.0.0 --port $PORT`. HF Spaces routes traffic
 to `$PORT=7860`, which the Space frontmatter `app_port: 7860` matches.
 `.dockerignore` trims the context: no tests, no docs, no demo media.

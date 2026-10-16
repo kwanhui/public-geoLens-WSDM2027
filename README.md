@@ -30,7 +30,23 @@ server and no text is sent to a third party.
 This repository holds the runnable system. The companion paper is listed at
 the end, under Citation.
 
-## Install and run
+## Run your own copy
+
+This section takes a fresh clone to a running instance, first on your own
+machine and then on a Hugging Face Space of your own. The hosted instance at
+<https://kwanhui-geo-lens.hf.space> is built from this repository by exactly
+these steps, so a copy built this way runs the same code.
+
+### Prerequisites
+
+- Python 3.10 or newer (the Space image uses 3.11), `git` and `make`.
+- About 400 MB of disk for `make install`. The encoder engines add torch and
+  transformers (several GB more) and download about 5 GB of model weights on
+  their first query.
+- Optional: an OpenAI API key, an Anthropic API key, Docker, and a Hugging
+  Face account for a Space.
+
+### Install
 
 ```bash
 git clone https://github.com/kwanhui/public-geoLens-WSDM2027.git
@@ -38,28 +54,161 @@ cd public-geoLens-WSDM2027
 
 python3 -m venv venv
 source venv/bin/activate
-make install
-make demo
+make install                # base package plus the test and lint tools
+pip install -e ".[real]"    # optional: torch and transformers for the encoders
 ```
 
-Open <http://localhost:7860>. The page opens on Post Geolocation, where you
-paste a post and press Geolocate. User Geolocation takes an account's recent
-posts instead, and Post vs. User Verification takes both and compares them.
+`make install` runs `pip install -e ".[dev]"`. A runtime-only install, which
+is what the Space image does, is `pip install -e ".[real]"`.
 
-`OPENAI_API_KEY` drives the GPT-4o-mini classifier and the onboarding
-drafter; `ANTHROPIC_API_KEY` drives the Claude Haiku classifier. The encoder
-engines need `pip install -e ".[real]"` (torch and transformers) and download
-their checkpoints on first use. Without any of that the instance runs in
-placeholder mode, in which the gazetteer still answers for real and every
-other engine returns a clearly marked placeholder. Put the keys in a local
-`.env` file and never commit it.
+### What each engine needs
+
+| Engine | Needs | Without it |
+| --- | --- | --- |
+| Gazetteer (post and user) | nothing | always answers for real |
+| ContrastGeo (post) | the `real` extra; downloads `princeton-nlp/sup-simcse-bert-large-uncased` | placeholder |
+| FewUser (user) | the `real` extra; downloads `princeton-nlp/sup-simcse-roberta-large` | placeholder |
+| RetrieveZero (user) | the `real` extra; downloads `intfloat/e5-large` | placeholder |
+| GPT-4o-mini (post and user) | `OPENAI_API_KEY` | placeholder |
+| Claude Haiku 4.5 (post and user) | `ANTHROPIC_API_KEY` | placeholder |
+| Onboarding drafter | `OPENAI_API_KEY` | a placeholder profile with no centroid, which the operator edits before saving |
+
+The encoder checkpoints come from the Hugging Face Hub on first use and need
+no token. They are cached under `HF_HOME` (by default
+`~/.cache/huggingface`), and the place embeddings computed from them are
+cached under `GEOLENS_CACHE_DIR` (by default `~/.geolens`). A clone with no
+keys and no `real` extra therefore still starts, and the gazetteer still
+returns real answers while every other engine returns a clearly marked
+placeholder. Setting `GEOLENS_STUB_MODE=1` puts every engine except the
+gazetteer into placeholder mode even when keys are present.
+
+The keys are read from the environment. Keep them in a local `.env` file,
+which `.gitignore` already excludes, and export it before starting the
+server.
 
 ```bash
-echo "OPENAI_API_KEY=sk-..." > .env
+printf 'OPENAI_API_KEY=sk-...\nANTHROPIC_API_KEY=sk-ant-...\n' > .env
 export $(cat .env | xargs)
 ```
 
-From the command line:
+### The catalogue and the example CSV
+
+The 50 built-in candidate places are listed in
+`src/geolens/engines/_cities.py`, and their coordinates, scales and sources
+are in `src/geolens/engines/_coords.py`. Every engine answers from this
+closed list, and an operator can append a place at run time from the
+Cold-start Place Onboarding tab. No catalogue data is downloaded.
+
+`eval/example_test_set.csv` is a hand-written labelled set of 50 rows in the
+schema that the Bulk Evaluation tab and the `eval` command read.
+`eval/README.md` describes the schema, and the WNUT-2016 rows behind the
+paper's table are not redistributed (the same file explains how to rebuild
+them from a licensed copy).
+
+### Start the server and the page
+
+```bash
+make demo
+```
+
+This runs `python3 -m geolens.app --host 0.0.0.0 --port 7860`, which serves
+the API and the page from one process. Open <http://localhost:7860>. The
+first log line states the version, the inference mode and the number of
+catalogue places. The OpenAPI document is at <http://localhost:7860/docs>.
+
+To confirm that the instance answers, from a second shell:
+
+```bash
+curl -s http://localhost:7860/healthz
+curl -s http://localhost:7860/instance
+curl -s -X POST http://localhost:7860/geolocate \
+  -H 'Content-Type: application/json' \
+  -d '{"post": "Just landed at Changi in Singapore", "engines": ["gazetteer_post"]}'
+```
+
+`/healthz` reports `{"status": "ok", ...}`. `/instance` lists the engine
+roster, the version and the commit, and the page builds itself from it. The
+`/geolocate` call runs only the gazetteer, which needs no key, and its
+`per_engine.gazetteer_post` entry names Singapore with `"mode": "real"`. The
+other engines come back as skipped with the reason `not selected`.
+
+To score the example CSV from the command line:
+
+```bash
+python3 -m geolens.cli eval eval/example_test_set.csv --out summary.json
+```
+
+Run `make test` to check the install. `tests/test_browser_ui.py` needs a
+Chromium build and is skipped without one (see Development below).
+
+### Run it in Docker
+
+The `Dockerfile` is the one the Space builds. It installs the `real` extra,
+sets the hosted instance's budgets and limits (listed in
+`demo/deployment.md`) and starts in placeholder mode.
+
+```bash
+docker build --build-arg GEOLENS_GIT_COMMIT=$(git rev-parse HEAD) -t geolens .
+docker run --rm -p 7860:7860 \
+  -e GEOLENS_STUB_MODE=0 -e GEOLENS_TRUSTED_PROXY_HOPS=0 \
+  -e OPENAI_API_KEY -e ANTHROPIC_API_KEY \
+  geolens
+```
+
+`GEOLENS_STUB_MODE=0` turns on real inference. `GEOLENS_TRUSTED_PROXY_HOPS=0`
+is right when nothing sits in front of the container; the image sets 1
+because the Space has one proxy in front. Leave out the two `-e` key flags
+for a keyless run.
+
+### Deploy to your own Hugging Face Space
+
+1. Create a Space at <https://huggingface.co/new-space> with SDK `Docker`
+   (blank template) and hardware `CPU basic`, which is free and is what the
+   hosted instance runs on (2 vCPU, 16 GB RAM). The front matter at the top
+   of this README (`sdk: docker`, `app_port: 7860`) is what the Space reads,
+   so keep it when you edit the README.
+2. Under *Settings, Variables and secrets*, add `OPENAI_API_KEY` and
+   `ANTHROPIC_API_KEY` as secrets if you want the paid engines, and
+   `GEOLENS_OPERATOR_TOKEN` as a secret if you want a token that can edit or
+   remove any onboarded place. Add `GEOLENS_STUB_MODE=0` as a variable to
+   turn on real inference; without it the Space serves placeholders and the
+   real gazetteer. Any setting in the Dockerfile can be overridden by a
+   variable of the same name. Put a hard monthly limit on both provider
+   keys in the providers' own dashboards.
+3. Create a write token at <https://huggingface.co/settings/tokens>.
+4. Push this repository to the Space with the build commit recorded:
+
+   ```bash
+   git clone https://github.com/kwanhui/public-geoLens-WSDM2027.git geolens-space
+   cd geolens-space
+   git rev-parse HEAD > src/geolens/data/build_commit.txt
+   git add -f src/geolens/data/build_commit.txt
+   git commit -m "Record the build commit"
+   git push --force https://<hf-user>:<hf-token>@huggingface.co/spaces/<hf-user>/<space-name> HEAD:main
+   ```
+
+   The force push replaces the starter commit that a new Space is created
+   with. The first build takes a few minutes, and the Space is then at
+   `https://<hf-user>-<space-name>.hf.space`.
+
+`src/geolens/data/build_commit.txt` holds one line, the 40-character commit
+of this repository that the Space was built from. A Space builds from a copy
+of the files with no `.git` directory, so without this file `GET /instance`
+and every run manifest would report the commit as `null`. The file is
+listed in `.gitignore` because it belongs to a deployment and not to the
+source, which is why step 4 adds it with `-f`. A Docker build can pass the
+commit as `--build-arg GEOLENS_GIT_COMMIT=...` instead, as above, and a local
+checkout reads it from git. The hosted instance's Space holds exactly the
+files of this repository at the commit it reports plus this one file.
+
+With `GEOLENS_STUB_MODE=0` the first query after a start downloads the
+encoder weights, which takes one to two minutes; send one query before you
+show it. A free Space sleeps after 48 hours without traffic, and the first
+request afterwards waits for it to start again. `demo/deployment.md` lists
+every setting with its package default and its hosted value, and what the
+hosting platform can see.
+
+### From the command line
 
 ```bash
 python3 -m geolens.cli geolocate --post "Just landed at Changi, ready for kaya toast"
@@ -390,8 +539,12 @@ legend.
 ## Companion paper
 
 "GeoLens: A Workbench for Comparing Zero-Shot Social Media Geolocation
-Engines", by Kwan Hui Lim, Menglin Li, Kunrong Li, Roy Ka-Wei Lee and
-Zhu Sun, submitted to the WSDM 2027 Demonstrations Track. The source code
+Engines", by Kwan Hui Lim (Singapore University of Social Sciences), Menglin
+Li (Singapore Institute of Technology), Kunrong Li (Singapore University of
+Technology and Design), Roy Ka-Wei Lee (University of British Columbia) and
+Zhu Sun (Singapore University of Technology and Design), submitted to the
+WSDM 2027 Demonstrations Track. The hosted instance is at
+<https://kwanhui-geo-lens.hf.space>. The source code
 is at
 [`public-geoLens-WSDM2027`](https://github.com/kwanhui/public-geoLens-WSDM2027),
 and the demo video is at <https://youtu.be/ArKLLrxWXCk>.
