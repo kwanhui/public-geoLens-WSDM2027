@@ -1,0 +1,40 @@
+{
+  "note": "Provenance for a run setting that the committed result files do not record. Written on 2026-10-17 from the source at the tags; no engine was run and the result files are unchanged.",
+  "flag_radius_km": 161.0,
+  "flag_radius_unit_note": "100 miles in km, the conventional Acc@161 km tolerance in user geolocation (Han et al. 2014).",
+  "why_not_in_the_manifests": "The two runs of 2026-06-01 predate the flag_radius_km request parameter (commit e6555d6, 2026-09-19) and the manifest field that records it (src/geolens/manifest.py, commit d4edb26). At the evaluation tag the radius was not a setting: the flag compared the consensus distance against a module constant.",
+  "source_at_tag": {
+    "tag": "wnut2016-eval-3803853",
+    "commit": "380385363d34536ace4aeebb7e23f5475be7c787",
+    "constant": "src/geolens/geo.py:16  ACC_KM_THRESHOLD = 161.0",
+    "gate": "src/geolens/triangulator/consensus.py:112  if distance_km > ACC_KM_THRESHOLD:",
+    "constant_unchanged_since": "bda6337 (2026-05-27, v0.7); the value has not changed in any later commit",
+    "caveat": "Both runs finished before the tagged commit was made (the commit is dated 2026-06-01T18:03:18Z), and no file records the exact tree they ran on. The constant is 161.0 in every commit from bda6337 to the tag, and no override existed, so the radius cannot have been anything else unless the working tree was edited by hand."
+  },
+  "source_at_head": {
+    "constant": "src/geolens/geo.py:16  ACC_KM_THRESHOLD = 161.0",
+    "default": "src/geolens/triangulator/consensus.py:106  radius_km: float = ACC_KM_THRESHOLD",
+    "gate": "src/geolens/triangulator/consensus.py:151  if distance_km > radius_km:",
+    "submission_tag": "wsdm2027-submission (3b3be1f) has the same three lines"
+  },
+  "applies_to": [
+    {
+      "file": "wnut2016.json",
+      "generated_at": "2026-06-01T17:13:49+00:00",
+      "flag_radius_km": 161.0,
+      "how": "banner counts produced by triangulate() at the evaluation tag"
+    },
+    {
+      "file": "wnut2016_banner.json",
+      "generated_at": "2026-06-01T17:57:58+00:00",
+      "flag_radius_km": 161.0,
+      "how": "banner counts produced by triangulate() at the evaluation tag"
+    },
+    {
+      "file": "wnut2016_flag_rescore.json",
+      "flag_radius_km": 161.0,
+      "how": "recomputed by scripts/rescore_flag.py (commit cd4c84c) from the two files above; it reads their counts and applies no radius of its own"
+    }
+  ],
+  "checked_by": "scripts/recompute_table.py, check_flag_radius()"
+}
