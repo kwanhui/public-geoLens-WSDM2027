@@ -9,6 +9,18 @@ The HTTP contract carries its own version, `api_version`, reported by
 be added and an optional parameter may appear; no field is removed or
 renamed. Anything outside the OpenAPI document may change in any release.
 
+## 0.14.6 (2026-11-22), API version 1.0
+
+The companion paper is accepted, and the documentation is corrected. No engine, scoring, limit or API change.
+
+- The README, `CITATION.cff` and the page footer say that the paper is accepted to the WSDM 2027 Demonstrations Track, and the citation is a conference paper.
+- `eval/results/wnut2016_provenance.json` names versions and the public tags `wnut2016-eval-3803853` and `wsdm2027-submission` in place of commit ids. Every number in it is unchanged.
+- `docs/hosted-latency-2026-11.md` records eight queries to the hosted instance with the local engines. `demo/deployment.md` gives its timings in place of an older estimate, and the README and `demo/deployment.md` give the encoder weights as about 4 GB.
+- The 0.14.1 entry lists the change of the Claude adapter's sampling among the differences from the evaluated behaviour.
+- The README says that the hosted instance runs the same files, deployed the same way, an onboarded place is described as a neighbourhood or a town in `eval/README.md`, and comments no longer name tools that are not in this repository.
+- The scenario checks and the recorded runs name the GeoLens version they were taken on, where they named a commit, and the recorded-run banner shows that version. `scripts/check_scenarios.py` records the version, and `scripts/recompute_table.py` finds a stale record by comparing the inputs it recorded with the scenario files.
+- Comments, docstrings and documentation were edited for plain wording.
+
 ## 0.14.5 (2026-09-20), API version 1.0
 
 The viral-post scenario runs in three steps. Only the page changed.
@@ -117,15 +129,16 @@ version is still 1.0.
 The prompt text, the encoder scoring, the per-level consensus rule, the
 161 km default, the fusion arithmetic and its default method, the
 gazetteer's matching of built-in names and aliases and the distance formula
-are as they were at tag `wnut2016-eval-3803853`. Three inputs to the engines
+are as they were at tag `wnut2016-eval-3803853`. Four inputs to the engines
 are not:
 
 - The gazetteer returns only the places the text named, where the list was padded up to k and an abstention returned the first catalogue entry. The top-1 place and score on a match stay the same, but fused rankings and the per-level consensus can change.
 - A failed engine call carries no place and is scored nowhere, where it used to return a placeholder place that was scored.
 - Landmark matching reaches onboarded places only, so no committed number moves.
+- The Claude adapter sends no sampling parameters, where both evaluation runs sent `temperature=0`. The anthropic 1.x SDK removed them from `Messages.create`, so the classifier runs at the model's default sampling.
 
 `eval/README.md` sets out what each one moves, and the paper discloses the
-two that move a committed number.
+two that move a committed number and the change of sampling.
 
 ## 0.8.0 (2026-05-30)
 

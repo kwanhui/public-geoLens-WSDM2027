@@ -279,7 +279,7 @@ def bundle(check: dict[str, Any], record: dict[str, Any], source: str) -> dict[s
         "source_file": source,
         "recorded_at": record.get("checked_at") or check.get("generated_at", ""),
         "base_url": check.get("base_url", ""),
-        "commit": (check.get("tool") or {}).get("commit", ""),
+        "version": (check.get("tool") or {}).get("version", ""),
         "scenario": {
             "id": scenario_id,
             "title": shipped["title"],

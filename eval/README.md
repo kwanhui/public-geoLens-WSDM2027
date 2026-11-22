@@ -192,6 +192,14 @@ endpoint takes it, and `python3 -m geolens.cli eval` takes
 reported result was produced under, is accepted in the range 1 to
 20,015 km, and the value used is recorded in the run manifest.
 
+The two WNUT-2016 runs of 2026-06-01 predate that parameter, so their
+manifests carry no `flag_radius_km`. At the tag `wnut2016-eval-3803853` the
+flag compared the consensus distance against the constant
+`ACC_KM_THRESHOLD = 161.0` (`src/geolens/geo.py:16`, used at
+`src/geolens/triangulator/consensus.py:112`). `results/wnut2016_provenance.json`
+records this for the three result files, and `scripts/recompute_table.py`
+checks it against the source at the tag.
+
 The flag compares the **consensus** place of each level, which is each
 engine's top prediction weighted by its confidence. That is a different
 quantity from the **fused prediction**, which sums each engine's top-k scores
@@ -367,7 +375,7 @@ becomes a candidate for every visitor after them until it expires on its
 time to live. `GET /instance`, `GET /onboard/status` and every run manifest
 report the state a request ran under.
 
-A place is a neighbourhood or a town, and an instance can be set to refuse
+An onboarded place is a neighbourhood or a town, and an instance can be set to refuse
 a name that reads as a building or a street address. Every place name,
 alias and landmark has to read as a name before it reaches either prompt or
 the gazetteer, and every profile field is length-bounded, with anything

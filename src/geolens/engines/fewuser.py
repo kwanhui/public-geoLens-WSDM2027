@@ -3,7 +3,7 @@
 Placeholder mode returns a deterministic stand-in; see `contrastgeo.py` for
 how the two modes are selected. Real mode is frozen-encoder cosine similarity
 over `sup-simcse-roberta-large`, a related encoder and not the published one,
-since the FewUser manuscript reports SimCSE-BERT-large as its backbone. The
+since the FewUser paper reports SimCSE-BERT-large as its backbone. The
 user signal is the recent posts joined with newlines.
 """
 

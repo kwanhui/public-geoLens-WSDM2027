@@ -4,7 +4,7 @@
   "source_file": "2026-09-20.json",
   "recorded_at": "2026-09-20T15:10:27+00:00",
   "base_url": "https://kwanhui-geo-lens.hf.space",
-  "commit": "a61d5a8f850a0cd1f3ee7d104f9a0c197d55972a",
+  "version": "0.14.5",
   "scenario": {
     "id": "crisis-response",
     "title": "A flooded town outside the catalogue",

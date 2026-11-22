@@ -57,7 +57,7 @@ def both_levels(record: dict) -> dict:
 
 def test_a_record_carries_what_the_result_view_reads() -> None:
     record = json.loads((RECORDS / "osint-credibility.json").read_text())
-    assert record["base_url"] and record["commit"] and record["recorded_at"]
+    assert record["base_url"] and record["version"] and record["recorded_at"]
     assert record["instance"]["engines"]
     assert record["instance"]["engine_reference"]["engines"]
     assert record["steps"]

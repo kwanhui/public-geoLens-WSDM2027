@@ -62,9 +62,6 @@ LLM_ENGINES = {"gpt4o_mini_post", "gpt4o_mini_user", "claude_haiku_post", "claud
 
 # Stated in the paper, reproducible from no committed file.
 NOT_CHECKABLE = [
-    "the verification flag's 161 km separation radius as actually used for "
-    "the two runs: no manifest in eval/results/ carries a flag_radius_km "
-    "field, only the README's description of the API default",
     "the 22 seed places against the 28 most frequent WNUT-2016 cities: "
     "inferable only from a comment boundary in "
     "src/geolens/engines/_cities.py, not a structured field in any "
@@ -555,6 +552,35 @@ def check_flag(report: Report, flag_rescore: dict, result: dict) -> None:
           f"[{wilson_range_rate2(tp737, tp737 + fn737)}]")
 
 
+def _tagged_threshold(tag: str) -> str | None:
+    """ACC_KM_THRESHOLD as written in src/geolens/geo.py at `tag`, if git has the tag."""
+    try:
+        text = subprocess.run(
+            ["git", "-C", str(REPO), "show", f"{tag}:src/geolens/geo.py"],
+            capture_output=True, text=True, check=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    match = re.search(r"^ACC_KM_THRESHOLD = ([\d.]+)$", text, re.M)
+    return match.group(1) if match else None
+
+
+def check_flag_radius(report: Report, provenance: dict) -> None:
+    """The flag radius the two runs used, which their manifests predate."""
+    print("\n[prose: the verification flag's radius, from wnut2016_provenance.json]")
+    radius = provenance["flag_radius_km"]
+    tag = provenance["source_at_tag"]["tag"]
+    tagged = _tagged_threshold(tag)
+    if tagged is None:
+        report.skip("flag radius in the source at the evaluation tag", f"{radius}",
+                    f"tag {tag} is not in this checkout")
+    else:
+        report.check("flag radius in the source at the evaluation tag",
+                     f"{radius}", tagged, "provenance file against geo.py at the tag")
+    report.from_paper("flag radius (km)", r"more than (\d+)~km \(100 miles\) apart",
+                      f"{radius:.0f}")
+
+
 def check_gazetteer_artefacts(report: Report, result: dict) -> None:
     """The hits the abstention fix may remove from the committed gazetteer rows."""
     print("\n[prose: the abstaining gazetteer's chance hits]")
@@ -625,39 +651,43 @@ def check_example_set(report: Report) -> None:
                       r"run the (\d+)-row authored example file", str(n))
 
 
-def _scenario_files_changed_since(commit: str) -> list[str]:
-    """Scenario files committed after `commit`, so a record may be stale.
+def _scenarios_changed_since_check(data: dict) -> list[str]:
+    """Scenarios whose inputs differ from what the check recorded, so it may be stale.
 
-    The bundled records under `scenarios/records/` are written from the check
-    itself, so they move with it and are not evidence of drift.
+    For each scenario in the check, the onboarded place, the region hint and
+    the posts sent are compared with the scenario file under
+    `src/geolens/ui/static/scenarios/`. The operator's edits are not part of
+    the record, so a change to them alone is not detected.
     """
-    if not commit:
-        return []
-    try:
-        out = subprocess.run(
-            ["git", "-C", str(REPO), "diff", "--name-only", f"{commit}..HEAD", "--",
-             "src/geolens/ui/static/scenarios"],
-            capture_output=True, text=True, check=True,
-        ).stdout
-    except (OSError, subprocess.CalledProcessError):
-        return []
-    return [line for line in out.splitlines()
-            if line.strip() and "/scenarios/records/" not in line]
+    changed = []
+    for recorded in data.get("scenarios", []):
+        path = REPO / "src" / "geolens" / "ui" / "static" / "scenarios" / f"{recorded['id']}.json"
+        if not path.exists():
+            changed.append(f"{recorded['id']} (no scenario file)")
+            continue
+        shipped = json.loads(path.read_text())
+        sent = [(p.get("post"), p.get("user_posts")) for p in recorded.get("posts", [])]
+        now = [(p.get("post"), p.get("user_posts")) for p in shipped.get("posts", [])]
+        if (recorded.get("onboard_city"), recorded.get("region", ""), sent) != (
+            shipped.get("onboard_city"), shipped.get("region", ""), now
+        ):
+            changed.append(recorded["id"])
+    return changed
 
 
 def check_scenario_checks(report: Report) -> None:
     path = _newest_scenario_check()
     data = json.loads(path.read_text())
-    commit = data.get("tool", {}).get("commit", "")
+    version = data.get("tool", {}).get("version", "")
     dirty = data.get("tool", {}).get("dirty")
     print(
         f"  newest scenario check: {path.name}  "
-        f"tool commit: {commit or '<no tool.commit field>'}{'  (dirty)' if dirty else ''}"
+        f"GeoLens {version or '<no tool.version field>'}{'  (dirty)' if dirty else ''}"
     )
 
-    changed = _scenario_files_changed_since(commit)
+    changed = _scenarios_changed_since_check(data)
     if changed:
-        print(f"  warning: {len(changed)} scenario file(s) changed after that commit, so "
+        print(f"  warning: the inputs of {len(changed)} scenario(s) differ from that check, so "
               f"{path.name} may describe an older scenario. Re-record with "
               "scripts/check_scenarios.py against a deployed instance.")
         for name in changed:
@@ -758,6 +788,7 @@ def main(argv: list[str] | None = None) -> int:
     result = json.loads((results_dir / "wnut2016.json").read_text())
     banner = json.loads((results_dir / "wnut2016_banner.json").read_text())
     flag_rescore = json.loads((results_dir / "wnut2016_flag_rescore.json").read_text())
+    provenance = json.loads((results_dir / "wnut2016_provenance.json").read_text())
 
     paper_dir = Path(args.paper_dir) if args.paper_dir else None
     paper = paper_text(paper_dir) if paper_dir else None
@@ -779,6 +810,7 @@ def main(argv: list[str] | None = None) -> int:
     check_costs(report, result)
     check_run_variation(report, result, banner)
     check_flag(report, flag_rescore, result)
+    check_flag_radius(report, provenance)
     check_gazetteer_artefacts(report, result)
     check_catalogue_geography(report)
     check_hosted_limits(report)

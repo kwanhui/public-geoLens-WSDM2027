@@ -104,9 +104,12 @@ def test_no_paper_dir_skips_the_paper_checks(capsys, monkeypatch) -> None:
     assert "MISMATCH" not in out
 
 
-def test_the_bundled_records_do_not_count_as_scenario_drift() -> None:
-    changed = recompute_table._scenario_files_changed_since("HEAD~1")
-    assert all("/scenarios/records/" not in name for name in changed), changed
+def test_scenario_drift_is_read_from_the_recorded_inputs() -> None:
+    newest = recompute_table._newest_scenario_check()
+    data = json.loads(newest.read_text())
+    assert recompute_table._scenarios_changed_since_check(data) == []
+    data["scenarios"][0]["posts"][0]["post"] = "a post the scenario file does not hold"
+    assert recompute_table._scenarios_changed_since_check(data) == [data["scenarios"][0]["id"]]
 
 
 def test_accuracies_round_half_up() -> None:

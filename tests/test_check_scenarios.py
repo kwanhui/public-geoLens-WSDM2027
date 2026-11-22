@@ -97,10 +97,10 @@ def test_each_query_records_every_engine_and_the_flag_state(call) -> None:
     assert set(query["flag"]) == {"raised", "post_consensus", "user_consensus", "km", "notes"}
 
 
-def test_the_report_names_the_commit_it_was_run_from(call, tmp_path) -> None:
+def test_the_report_names_the_version_it_was_run_from(call, tmp_path) -> None:
     report = check_scenarios.run(call, "http://testserver", only="crisis-response")
     assert report["base_url"] == "http://testserver"
-    assert len(report["tool"]["commit"]) == 40
+    assert report["tool"]["version"] == check_scenarios.__version__
     assert len(report["scenarios"]) == 1
     assert report["scenarios"][0]["id"] == "crisis-response"
 

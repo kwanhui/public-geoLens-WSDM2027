@@ -33,6 +33,8 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from geolens import __version__
+
 REPO = Path(__file__).resolve().parents[1]
 SCENARIOS = REPO / "src/geolens/ui/static/scenarios"
 DEFAULT_OUT = REPO / "docs/scenario-checks"
@@ -78,8 +80,8 @@ def _save_tokens(tokens: dict[str, str]) -> None:
     TOKEN_FILE.write_text(json.dumps(tokens))
 
 
-def tool_commit() -> dict[str, Any]:
-    """The commit the checked instance is expected to be running."""
+def tool_version() -> dict[str, Any]:
+    """The GeoLens version the checked instance is expected to be running."""
     def git(*args: str) -> str:
         try:
             return subprocess.run(
@@ -88,7 +90,7 @@ def tool_commit() -> dict[str, Any]:
         except (OSError, subprocess.CalledProcessError):
             return ""
 
-    return {"commit": git("rev-parse", "HEAD"), "dirty": bool(git("status", "--porcelain"))}
+    return {"version": __version__, "dirty": bool(git("status", "--porcelain"))}
 
 
 def load_scenarios(only: str | None = None) -> list[dict[str, Any]]:
@@ -217,7 +219,7 @@ def run(call: Caller, base_url: str, only: str | None = None) -> dict[str, Any]:
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "base_url": base_url,
-        "tool": tool_commit(),
+        "tool": tool_version(),
         "scenarios": [check_scenario(call, s) for s in load_scenarios(only)],
     }
 

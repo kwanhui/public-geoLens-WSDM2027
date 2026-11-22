@@ -39,16 +39,16 @@ function replayTasks(record) {
   return tasks.length ? tasks : [fallback];
 }
 
-// When the run was recorded and at which commit. Where it was recorded, and
+// When the run was recorded and on which version. Where it was recorded, and
 // what that means for the network, is the note behind the icon.
 function recordedBannerMarkup(record) {
   const date = String(record.recorded_at || "").slice(0, 10);
-  const commit = String(record.commit || "").slice(0, 7);
+  const version = String(record.version || "");
   const note = infoNote(
     "i-replay", "this recorded run",
     `Recorded from ${escapeHtml(String(record.base_url || ""))}. ` +
     "Nothing on this page calls an endpoint.");
-  return `Recorded run, ${escapeHtml(date)}, commit ${escapeHtml(commit)}. ` +
+  return `Recorded run, ${escapeHtml(date)}, GeoLens ${escapeHtml(version)}. ` +
     "Not a live result." + note.button + note.body;
 }
 

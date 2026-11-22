@@ -6,7 +6,7 @@ from geolens.triangulator.consensus import TriangulationResult, triangulate
 # The one place the build version is written. pyproject.toml reads it with
 # setuptools' dynamic `attr:`, and the FastAPI app and the run manifest
 # both report it, so OpenAPI and the manifest cannot drift apart again.
-__version__ = "0.14.5"
+__version__ = "0.14.6"
 
 # The version of the HTTP contract, which moves only when the contract does.
 # It is deliberately not the build version: a change to the page, a

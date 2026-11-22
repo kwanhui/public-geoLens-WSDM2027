@@ -2,7 +2,7 @@
   "generated_at": "2026-09-20T15:09:45+00:00",
   "base_url": "https://kwanhui-geo-lens.hf.space",
   "tool": {
-    "commit": "a61d5a8f850a0cd1f3ee7d104f9a0c197d55972a",
+    "version": "0.14.5",
     "dirty": false
   },
   "scenarios": [
