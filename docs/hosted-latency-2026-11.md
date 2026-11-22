@@ -13,12 +13,11 @@ read the same before and after the run.
 
 `GET /instance` at 2026-11-22 10:25:38 UTC (18:25:38 SGT) reported version
 0.14.5 and API version 1.0, and listed the same five engines as
-`local_engines`. The deployed build ran the code of tag `v0.14.5`; the
-commits deployed after that tag changed documentation, the evaluation
-provenance file and `scripts/recompute_table.py`, none of which the server
-runs. It answered in 727 ms, so the Space was running: the
-first query below is the first encoder call of this run, not a start of the
-container after a sleep.
+`local_engines`. The build deployed then differed from `v0.14.5` only in
+documentation, the evaluation provenance file and
+`scripts/recompute_table.py`, none of which the server runs. It answered in
+727 ms, so the Space was running: the first query below is the first encoder
+call of this run, not a start of the container after a sleep.
 
 ## What was measured
 

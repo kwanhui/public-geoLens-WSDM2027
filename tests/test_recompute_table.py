@@ -42,7 +42,8 @@ def test_every_number_the_paper_prints_reproduces(capsys) -> None:
     assert "[not reported in the paper: fusion's differs-from-best-single rate]" in out
     assert "fusion changes top-1" not in out.lower()
     assert "[stated in the paper, not checkable from committed files]" in out
-    assert "161 km separation radius" in out
+    assert "flag radius (km)" in out
+    assert "flag radius in the source at the evaluation tag" in out
     assert "orders of magnitude" not in out
     assert "flag false-positive rate 95% Wilson" in out
     assert "paper=0.53 to 0.66" in out
@@ -55,7 +56,7 @@ def test_every_number_the_paper_prints_reproduces(capsys) -> None:
     assert "paper=absent" in out and "recomputed=absent" in out
     assert "OSINT scenario check separation (figure caption)" in out
     assert "paper=5,311" in out
-    assert "tool commit:" in out
+    assert "newest scenario check:" in out
     assert "scenario presets" in out
     assert "authored example file rows" in out
     assert "verification flag candidate causes" in out

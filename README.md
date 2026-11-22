@@ -35,7 +35,11 @@ the end, under Citation.
 This section takes a fresh clone to a running instance, first on your own
 machine and then on a Hugging Face Space of your own. The hosted instance at
 <https://kwanhui-geo-lens.hf.space> runs the same files, deployed the same
-way, so a copy built this way runs the same code.
+way, so a copy built this way runs the same code. Its `GET /instance`
+reports, as `git_commit`, the commit of this repository that it runs. Each
+commit deployed there is tagged in this repository as `space-YYYY-MM-DD`
+(with a `-n` suffix when one day has more than one deploy), and each release
+as `v<version>`.
 
 ### Prerequisites
 
