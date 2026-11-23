@@ -929,10 +929,21 @@ class EngineMetricsView(BaseModel):
     n_rank_found: int = Field(
         default=0, description="How many rows `mean_rank_found` was computed over."
     )
-    median_error_km: float
+    median_error_km: float = Field(
+        description="Over the rows on which the engine named a place (`n_km`)."
+    )
     mean_error_km: float
-    acc_at_161km: float
-    n_geo: int
+    acc_at_161km: float = Field(
+        description=(
+            "Share of the scored rows within 161 km of the truth, over the same rows "
+            "as Acc@1; an abstention counts as a miss."
+        )
+    )
+    n_geo: int = Field(description="Rows behind `acc_at_161km`, abstentions included.")
+    n_km: int = Field(
+        default=0,
+        description="Rows behind the median and mean error, abstentions excluded.",
+    )
     n_abstained: int = 0
     median_latency_ms: float
     total_cost_usd: float = Field(
@@ -958,6 +969,7 @@ class EnsembleMetricsView(BaseModel):
     median_error_km: float
     acc_at_161km: float
     n_geo: int = 0
+    n_km: int = 0
     n_evaluated: int
     differs_from_best_single_rate: float
 
@@ -2252,6 +2264,7 @@ def create_app() -> FastAPI:
                         mean_error_km=m.mean_error_km,
                         acc_at_161km=m.acc_at_161km,
                         n_geo=m.n_geo,
+                        n_km=m.n_km,
                         n_abstained=m.n_abstained,
                         median_latency_ms=m.median_latency_ms,
                         total_cost_usd=m.total_cost_usd,
@@ -2272,6 +2285,7 @@ def create_app() -> FastAPI:
                         median_error_km=m.median_error_km,
                         acc_at_161km=m.acc_at_161km,
                         n_geo=m.n_geo,
+                        n_km=m.n_km,
                         n_evaluated=m.n_evaluated,
                         differs_from_best_single_rate=m.differs_from_best_single_rate,
                     )

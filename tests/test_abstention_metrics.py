@@ -1,6 +1,7 @@
 """Metrics for an engine that abstained rather than answered.
 
-An abstention is left out of the distance metrics and counted separately.
+An abstention is left out of the median and mean error, counted as a miss
+for Acc@161 km (over the same rows as Acc@1), and counted separately.
 `mean_rank` keeps the 1,000,000 sentinel for compatibility; `mean_rank_found`
 averages only the rows where the truth was in the list.
 """
@@ -44,8 +45,17 @@ def test_an_abstention_is_counted_not_scored_as_a_near_miss() -> None:
 
     assert m.n_evaluated == len(PLACELESS)
     assert m.n_abstained == len(PLACELESS)
-    assert m.n_geo == 0
-    assert m.median_error_km == 0.0  # no rows contributed; n_geo says so
+    assert m.n_km == 0
+    assert m.median_error_km == 0.0  # no rows contributed; n_km says so
+
+
+def test_acc_at_161km_counts_an_abstention_as_a_miss() -> None:
+    """One definition of Acc@161 km: the same rows as Acc@1, abstentions
+    included as misses, which is how the committed WNUT-2016 results count."""
+    m = _summary().per_engine["gazetteer_post"]
+
+    assert m.n_geo == m.n_evaluated == len(PLACELESS)
+    assert m.acc_at_161km == 0.0
 
 
 def test_the_mean_rank_over_found_rows_excludes_the_sentinel() -> None:
@@ -72,4 +82,6 @@ def test_an_engine_that_answers_reports_the_rows_it_was_found_on() -> None:
     assert m.n_abstained == 1
     assert m.n_rank_found == 1
     assert m.mean_rank_found == 1.0
-    assert m.n_geo == 1
+    assert m.n_km == 1  # the median error covers the answered row only
+    assert m.n_geo == 2  # Acc@161 km covers both, the abstention as a miss
+    assert m.acc_at_161km == 0.5

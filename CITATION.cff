@@ -24,10 +24,11 @@ authors:
     given-names: Zhu
     affiliation: "Singapore University of Technology and Design"
 type: software
-version: 0.14.6
-date-released: "2026-11-22"
+version: 0.14.7
+date-released: "2026-11-23"
 license: MIT
 repository-code: "https://github.com/kwanhui/public-geoLens-WSDM2027"
+url: "https://kwanhui-geo-lens.hf.space"
 preferred-citation:
   type: conference-paper
   title: "GeoLens: A Workbench for Comparing Zero-Shot Social Media Geolocation Engines"

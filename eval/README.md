@@ -128,8 +128,13 @@ Per engine and per fusion level:
   over the rows where the truth was in the list. The plain mean averages in
   a 1,000,000 sentinel for an abstention, so read `mean_rank_found` and
   `n_rank_found`.
-- Median and mean great-circle error in km and Acc@161km, over the rows the
-  engine answered on, with an abstention counted separately.
+- Median and mean great-circle error in km, over the rows on which the
+  engine named a place (`n_km`), and Acc@161km, the share of the same rows as
+  Acc@1 whose top prediction lies within 161 km of the truth (`n_geo`), so
+  an abstention counts as a miss. Abstentions are also counted on their own
+  (`n_abstained`). This is the one definition of Acc@161km in the code, the
+  committed results and the paper: the committed WNUT-2016 runs counted every
+  scored row, and the paper's table says so.
 - Median latency and total cost in USD per engine.
 - A per-difficulty breakdown of Acc@1 by bucket, and a
   differs-from-best-single rate for each fused prediction.
@@ -338,6 +343,37 @@ id,post,user_posts,ground_truth_city,ground_truth_user_city,should_disagree
 disagree-1,Fire at Marina Bay Sands,Ramen in Tokyo|Tokyo again,Singapore,Tokyo,1
 userhome-1,Queue at the Bedok hawker centre,Bedok reservoir run|Bedok again,Bedok,Bedok,0
 ```
+
+Besides the results JSON, the adapter writes two files beside it. The
+per-row CSV (`--rows-out`, default `<out>_rows.csv`) has one line per input
+row: its bucket, its truths and which part of the evaluation it belongs to,
+then for each engine the place, the call outcome (`answered`, `abstained`,
+`failed`, `no_catalogue_place`, `skipped` or `not_run`), whether it was
+right and its distance from the truth, then each level's consensus and the
+flag under both consensus rules. It holds tweet ids and place names but no
+tweet text. The flag sweep CSV (`--sweep-out`, default
+`<out>_flag_sweep.csv`) gives the flag's counts and rates at every radius of
+`--flag-radius-sweep` (default 25 to 5,000 km) under both rules.
+
+In the JSON, `manifest.engine_outcomes` splits each engine's calls into
+attempted, answered, abstained, failed (a call that raised or a reply that
+could not be read) and `no_catalogue_place` (an LLM reply that named nothing
+in the catalogue), with `failed_replies` the sum of the last two and
+`coverage` the share of attempted calls that named a place. `coverage`
+gives the same counts for each scored section, so every rate can be read
+against its denominator. A failed call or unreadable reply is left out of
+that engine's Acc@1 and of the paired McNemar tests; an abstention is a
+miss in both.
+
+`--flag-consensus` chooses how each level's consensus behind the flag is
+taken: `weighted`, the default and the rule of every reported result, sums
+each engine's confidence for its top place; `majority` gives each engine
+that named a place one vote, and the confidences decide only a tie
+(`tied_rows` counts those). `flag` reports the flag over the 400 rows with a
+timeline under the chosen rule and `--flag-radius-km`, `flag_comparison`
+both rules at that radius, and `flag_sweep` both rules at every radius of
+the sweep. The comparison and the sweep re-apply the consensus to the
+predictions the run already holds, so they cost no further calls.
 
 Two differences from the adapter remain. First, `/eval` scores every engine
 on every row it is given, so restricting an engine to its own buckets means

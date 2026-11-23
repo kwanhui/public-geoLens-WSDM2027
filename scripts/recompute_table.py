@@ -219,7 +219,13 @@ class Report:
         if match is None:
             self.skip(label, recomputed, "the paper no longer prints this")
             return
-        self._print(label, match.group(group), recomputed, note)
+        # A pattern may list the old and the current wording as alternatives,
+        # each with its own group; the value is the one that matched.
+        if group == 1 and match.lastindex and match.lastindex > 1:
+            value = next(g for g in match.groups() if g is not None)
+        else:
+            value = match.group(group)
+        self._print(label, value, recomputed, note)
 
 
 # ---------- inputs other than eval/results ----------
@@ -363,20 +369,22 @@ def check_prose(report: Report, result: dict) -> None:
     report.from_paper("rows sent to the engines",
                       r"([\d,]+) catalogued rows",
                       str(counts["total"] - counts["ooc_rows"]))
-    report.from_paper("out-of-catalogue rows", r"(\d+) tweets lie beyond",
+    report.from_paper("out-of-catalogue rows", r"(?:(\d+) tweets lie beyond|exclude another (\d+) tweets whose geotags)",
                       str(counts["ooc_rows"]))
-    report.from_paper("paired rows", r"The (\d+) \\emph\{paired\} rows",
+    report.from_paper("paired rows", r"(?:The|we use) (\d+) \\emph\{paired\} rows",
                       str(counts["total"] - counts["post_level_rows"] - counts["userhome_rows"]))
     # The paper gives the catalogue as its two groups, so the size is their sum.
     size = str(result["manifest"]["catalogue_size"])
-    groups = re.search(r"catalogue contains (\d+) frequent [\w-]+ cities and (\d+) seed places",
+    groups = re.search(r"(?:catalogue contains (\d+) frequent [\w-]+ cities and (\d+) seed places"
+                       r"|took (\d+) frequently occurring cities from [\w-]+ and chose (\d+) seed places)",
                        report.paper or "")
     if report.paper is None:
         report.skip("catalogue size N", size, "no paper source")
     elif groups is None:
         report.skip("catalogue size N", size, "the paper no longer prints this")
     else:
-        cities, seeds = int(groups.group(1)), int(groups.group(2))
+        found = [int(g) for g in groups.groups() if g is not None]
+        cities, seeds = found[0], found[1]
         report.check("catalogue size N", str(cities + seeds), size,
                      f"(paper: {cities} cities and {seeds} seed places)")
 
@@ -400,10 +408,10 @@ def check_prose(report: Report, result: dict) -> None:
         return p
 
     report.from_paper("McNemar, the two LLMs at post level",
-                      r"\(\$p=([\d.]+)\$ for posts",
+                      r"(?:\(\$p=([\d.]+)\$ for posts|on posts \(\$p=([\d.]+)\$\))",
                       f"{p_for('gpt4o_mini_post', 'claude_haiku_post'):.2f}")
     report.from_paper("McNemar, the two LLMs at user level",
-                      r"and \$p=([\d.]+)\$ for users\)",
+                      r"(?:and \$p=([\d.]+)\$ for users\)|or users \(\$p=([\d.]+)\$\))",
                       f"{p_for('gpt4o_mini_user', 'claude_haiku_user'):.2f}")
     cross = [p_for(a, b) for (a, b) in pairs if (a in LLM_ENGINES) != (b in LLM_ENGINES)]
     report.from_paper("McNemar, every LLM against every encoder and the gazetteer",
@@ -423,18 +431,18 @@ def check_buckets(report: Report, result: dict) -> None:
     named, unnamed = per_bucket["intl"], per_bucket["hard-sem"]
 
     report.from_paper("rows whose text names a catalogue place",
-                      r"On the (\d+) rows on which its matcher finds a catalogue place",
+                      r"(?:On the (\d+) rows on which its matcher finds a catalogue place|Among the (\d+) rows with a gazetteer match)",
                       str(named["n_rows"]))
     report.from_paper("rows whose text names none", r"On the other (\d+) rows",
                       str(unnamed["n_rows"]))
 
     for engine in ("gazetteer_post", "gpt4o_mini_post", "claude_haiku_post"):
         report.from_paper(f"names a place, Acc@1, {engine}",
-                          r"each reach an Acc@1 of (\.\d+)",
+                          r"(?:each reach an Acc@1 of (\.\d+)|and (\.\d+) each for GPT-4o-mini, Claude Haiku 4\.5, and the gazetteer)",
                           acc3(named["acc_at_1"][engine]),
                           _tie_note(named["acc_at_1"][engine], places=3))
     report.from_paper("names a place, Acc@1, contrastgeo",
-                      r"and ContrastGeo reaches (\.\d+)\.",
+                      r"(?:and ContrastGeo reaches (\.\d+)\.|Acc@1 reaches (\.\d+) for ContrastGeo)",
                       acc3(named["acc_at_1"]["contrastgeo"]),
                       _tie_note(named["acc_at_1"]["contrastgeo"], places=3))
 
@@ -481,8 +489,8 @@ def check_costs(report: Report, result: dict) -> None:
         claude = corrected_cost(f"claude_haiku_{label}", recorded)
         # The paper prints the ratio rounded to a whole number, in words.
         ratio = words(int(_round(claude / gpt, 0)))
-        pattern = (r"costs (?:approximately )?(\w+) and \w+ times" if label == "post"
-                   else r"costs (?:approximately )?\w+ and (\w+) times")
+        pattern = (r"(?:costs (?:approximately )?(\w+) and \w+ times|costs about (\w+) times as much as GPT-4o-mini for posts)" if label == "post"
+                   else r"(?:costs (?:approximately )?\w+ and (\w+) times|for posts and (\w+) times as much for users)")
         report.from_paper(f"cost ratio, Claude to GPT-4o-mini, {label} level", pattern, ratio,
                           f"(ratio {ratio1(claude / gpt)}; Claude recorded {recorded:.7g} USD, "
                           f"corrected {claude:.7g}; GPT-4o-mini {gpt:.7g} unchanged)")
@@ -493,9 +501,9 @@ def check_run_variation(report: Report, result: dict, banner: dict) -> None:
     first = result["user_level"]["engines"]["gpt4o_mini_user"]["acc_at_1"]
     second = banner["user_level"]["engines"]["gpt4o_mini_user"]["acc_at_1"]
     report.from_paper("GPT-4o-mini user-level Acc@1, first run",
-                      r"changes from (\.\d+) to \.\d+", acc3(first))
+                      r"(?:changes from (\.\d+) to \.\d+|Acc@1 of (\.\d+) and \.\d+ for GPT-4o-mini)", acc3(first))
     report.from_paper("GPT-4o-mini user-level Acc@1, second run",
-                      r"changes from \.\d+ to (\.\d+)", acc3(second))
+                      r"(?:changes from \.\d+ to (\.\d+)|Acc@1 of \.\d+ and (\.\d+) for GPT-4o-mini)", acc3(second))
 
 
 def check_flag(report: Report, flag_rescore: dict, result: dict) -> None:
@@ -507,19 +515,19 @@ def check_flag(report: Report, flag_rescore: dict, result: dict) -> None:
     tpr, fpr = tp / n_positive, fp / n_negative
 
     report.from_paper("flag rows (user-timeline set)",
-                      r"over the (\d+) rows with a timeline", str(row["n_rows"]))
-    report.from_paper("flag true positives", r"raised on (\d+) of the \d+ paired rows", str(tp))
+                      r"(?:over the (\d+) rows with a timeline|on all (\d+) user-level and paired rows)", str(row["n_rows"]))
+    report.from_paper("flag true positives", r"raised on (\d+) of (?:the )?\d+ paired rows", str(tp))
     report.from_paper("paired rows (flag positives)",
-                      r"raised on \d+ of the (\d+) paired rows", str(n_positive))
+                      r"raised on \d+ of (?:the )?(\d+) paired rows", str(n_positive))
     report.from_paper("flag true-positive rate (Section 5 and abstract)",
                       r"a true-positive rate of ([\d.]+)", rate2(tpr))
     report.from_paper("flag true-positive rate 95% Wilson",
                       r"Wilson interval ([\d.]+ to [\d.]+)\)",
                       wilson_range_rate2(tp, n_positive))
     report.from_paper("flag false positives",
-                      r"on (\d+) of the \d+ home-consistent rows", str(fp))
+                      r"on (\d+) of (?:the )?\d+ home-consistent rows", str(fp))
     report.from_paper("home-consistent rows (flag negatives)",
-                      r"on \d+ of the (\d+) home-consistent rows", str(n_negative))
+                      r"on \d+ of (?:the )?(\d+) home-consistent rows", str(n_negative))
     report.from_paper("flag false-positive rate (Section 5 and abstract)",
                       r"a false-positive rate of ([\d.]+)", rate2(fpr))
     report.from_paper("flag false-positive rate 95% Wilson",
@@ -533,7 +541,7 @@ def check_flag(report: Report, flag_rescore: dict, result: dict) -> None:
     prevalence = 0.05
     adjusted = (prevalence * tpr) / (prevalence * tpr + (1 - prevalence) * fpr)
     report.from_paper("flag precision at 5% away-from-home prevalence",
-                      r"precision would be approximately ([\d.]+)", rate2(adjusted),
+                      r"(?:precision would be approximately ([\d.]+)|estimate a precision of ([\d.]+) if)", rate2(adjusted),
                       f"(formula: 0.05*TPR / (0.05*TPR + 0.95*FPR) = "
                       f"0.05*{tpr:.4f} / (0.05*{tpr:.4f} + 0.95*{fpr:.4f}) = {adjusted:.4f})")
 
@@ -577,7 +585,7 @@ def check_flag_radius(report: Report, provenance: dict) -> None:
     else:
         report.check("flag radius in the source at the evaluation tag",
                      f"{radius}", tagged, "provenance file against geo.py at the tag")
-    report.from_paper("flag radius (km)", r"more than (\d+)~km \(100 miles\) apart",
+    report.from_paper("flag radius (km)", r"more than (\d+)~km \(100 miles\)",
                       f"{radius:.0f}")
 
 
@@ -589,19 +597,19 @@ def check_gazetteer_artefacts(report: Report, result: dict) -> None:
     n_user = user["n_evaluated"]
     n_post = post["n_evaluated"]
     report.from_paper("gazetteer user-level Acc@1 matches",
-                      r"gazetteer's (\d+) user-level Acc@1 matches",
+                      r"(?:gazetteer's (\d+) user-level Acc@1 matches|up to \d+ of (\d+) Acc@1 matches)",
                       str(round(user["acc_at_1"] * n_user)))
     report.from_paper("gazetteer user-level matches within 161 km",
-                      r"at most \d+ of its (\d+) user-level matches within 161",
+                      r"(?:at most \d+ of its (\d+) user-level matches within 161|up to \d+ of (\d+) matches within 161)",
                       str(round(user["acc_at_161km"] * n_user)))
     without_four = round(post["acc_at_161km"] * n_post) - 4
     report.from_paper("gazetteer post-level Acc@161km without four chance hits",
-                      r"its post-level Acc@161~km is (\.\d+) \(\d+ of \d+\)",
+                      r"(?:its post-level|the gazetteer's) Acc@161~km is (\.\d+) \(\d+ of \d+\)",
                       acc2(without_four / n_post))
     report.from_paper("gazetteer post-level hits within 161 km without four",
-                      r"post-level Acc@161~km is \.\d+ \((\d+) of \d+\)", str(without_four))
+                      r"(?:post-level|gazetteer's) Acc@161~km is \.\d+ \((\d+) of \d+\)", str(without_four))
     report.from_paper("gazetteer post-level rows behind that rate",
-                      r"post-level Acc@161~km is \.\d+ \(\d+ of (\d+)\)", str(n_post))
+                      r"(?:post-level|gazetteer's) Acc@161~km is \.\d+ \(\d+ of (\d+)\)", str(n_post))
 
 
 def check_catalogue_geography(report: Report) -> None:
@@ -626,7 +634,7 @@ def check_hosted_limits(report: Report) -> None:
     print("\n[prose: the hosted instance's limits, from the Dockerfile]")
     env = _dockerfile_env()
     report.from_paper("hosted queries per hour",
-                      r"\((\d+) queries, \d+ profile saves", env.get("MAX_QUERIES_PER_HOUR", "?"))
+                      r"(?:\(|limits of )(\d+) queries, \d+ profile saves", env.get("MAX_QUERIES_PER_HOUR", "?"))
     report.from_paper("hosted profile saves per hour",
                       r"queries, (\d+) profile saves", env.get("MAX_PROFILE_SAVES_PER_HOUR", "?"))
     report.from_paper("hosted bulk jobs per hour",
@@ -634,7 +642,7 @@ def check_hosted_limits(report: Report) -> None:
     report.from_paper("hosted rows per bulk job",
                       r"bulk jobs of at most (\d+) rows", _max_batch_rows_default())
     report.from_paper("hosted onboarded places",
-                      r"at most (\d+) (?:such|onboarded) places", env.get("GEOLENS_MAX_ONBOARDED", "?"))
+                      r"(?:at most|up to) (\d+) (?:such|onboarded) places", env.get("GEOLENS_MAX_ONBOARDED", "?"))
     ttl = env.get("GEOLENS_ONBOARD_TTL_MINUTES", "0")
     hours = int(ttl) // 60 if ttl.isdigit() else 0
     report.from_paper("hosted expiry of an onboarded place",
@@ -648,7 +656,7 @@ def check_example_set(report: Report) -> None:
     with EXAMPLE_SET.open(newline="") as f:
         n = sum(1 for _ in csv.DictReader(f))
     report.from_paper("authored example file rows",
-                      r"run the (\d+)-row authored example file", str(n))
+                      r"(?:run the (\d+)-row authored example file|the file of (\d+) authored examples)", str(n))
 
 
 def _scenarios_changed_since_check(data: dict) -> list[str]:
@@ -693,7 +701,7 @@ def check_scenario_checks(report: Report) -> None:
         for name in changed:
             print(f"    - {name}")
 
-    report.from_paper("scenario presets", r"selects one of (\w+) scenario presets",
+    report.from_paper("scenario presets", r"(?:selects one of (\w+) scenario presets|We provide (\w+) presets)",
                       words(len(data["scenarios"])))
 
     scenario = next((s for s in data["scenarios"] if s["id"] == "osint-credibility"), None)
@@ -707,23 +715,27 @@ def check_scenario_checks(report: Report) -> None:
         raise SystemExit(
             f"{path.name}: no 'osint-credibility' query sends both a post and a timeline")
     km = query["flag"]["km"]
-    report.from_paper("OSINT scenario check separation (figure caption)",
-                      r"return Tokyo, ([\d,]+)~km away", f"{round(km):,}")
+    report.from_paper("OSINT scenario check separation",
+                      r"(?:return Tokyo, ([\d,]+)~km away|The ([\d,]+)~km gap between Singapore)", f"{round(km):,}")
 
     notes_text = " ".join(query["flag"].get("notes", []))
     causes = ["one of the two predictions is wrong", "the post is about another place",
               "a travel post", "a shared or compromised account", "a misleading geotag"]
     found = [c for c in causes if c in notes_text]
     report.from_paper("verification flag candidate causes",
-                      r"the distance, and (\w+) (?:candidate|possible) causes", words(len(found)),
+                      r"(?:the distance, and|along with) (\w+) (?:candidate|possible) causes", words(len(found)),
                       "" if len(found) == len(causes) else f"(matched only: {found})")
 
+    # The paper says that the operator corrects the centroid but no longer
+    # prints by how far, so the distance is printed for reference only.
     moved = _centroid_move(data)
-    if moved is None:
-        report.skip("drafted centroid moved by the operator", "no record", "no recorded edit")
-    else:
+    if report.paper is not None and re.search(r"moves the drafted centroid by", report.paper):
         report.from_paper("drafted centroid moved by the operator",
-                          r"moves the drafted centroid by ([\d.]+)~km", f"{moved:.1f}")
+                          r"moves the drafted centroid by ([\d.]+)~km",
+                          "no record" if moved is None else f"{moved:.1f}")
+    else:
+        print("  [for reference, not printed in the paper] drafted centroid moved by the "
+              f"operator: {'no record' if moved is None else f'{moved:.1f} km'}")
 
 
 def _centroid_move(check: dict) -> float | None:

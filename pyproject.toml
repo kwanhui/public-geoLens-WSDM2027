@@ -61,6 +61,7 @@ geolens = "geolens.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/kwanhui/public-geoLens-WSDM2027"
+"Live demo" = "https://kwanhui-geo-lens.hf.space"
 Issues = "https://github.com/kwanhui/public-geoLens-WSDM2027/issues"
 
 [tool.setuptools.dynamic]

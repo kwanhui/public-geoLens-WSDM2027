@@ -54,7 +54,7 @@ def test_every_number_the_paper_prints_reproduces(capsys) -> None:
     assert "0.05*TPR / (0.05*TPR + 0.95*FPR)" in out
     assert "out-of-catalogue rows carry no per-engine metric section" in out
     assert "paper=absent" in out and "recomputed=absent" in out
-    assert "OSINT scenario check separation (figure caption)" in out
+    assert "OSINT scenario check separation" in out
     assert "paper=5,311" in out
     assert "newest scenario check:" in out
     assert "scenario presets" in out
@@ -83,8 +83,10 @@ def test_the_checks_the_paper_gained_are_covered(capsys) -> None:
         "hosted expiry of an onboarded place",
     ):
         assert label in out, label
-    # Values the paper has stopped printing are skipped, not failed.
-    assert "skipped: the paper no longer prints this" in out
+    # Every pattern matches the current wording, so nothing the paper prints
+    # is skipped; a value the paper stops printing would be skipped, not failed.
+    assert "skipped: the paper no longer prints this" not in out
+    assert "check(s) skipped" not in out
     assert "adapter shuffle seed" not in out
     assert "selection cap" not in out
 

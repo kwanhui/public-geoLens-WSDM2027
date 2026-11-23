@@ -1,5 +1,10 @@
 """Cross-engine fusion: agreement, disagreement, calibration."""
 
-from geolens.triangulator.consensus import TriangulationResult, triangulate
+from geolens.triangulator.consensus import (
+    CONSENSUS_RULES,
+    TriangulationResult,
+    majority_tied,
+    triangulate,
+)
 
-__all__ = ["TriangulationResult", "triangulate"]
+__all__ = ["CONSENSUS_RULES", "TriangulationResult", "majority_tied", "triangulate"]

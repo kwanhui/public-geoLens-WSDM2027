@@ -3,6 +3,13 @@
 Computed only over rows with `status=ok` and a ground truth in the catalogue;
 OOC and error rows are reported separately. The distance metrics are median
 and mean great-circle error in km and Acc@161 km. See `geolens.geo`.
+
+Acc@161 km has one definition everywhere: the share of scored rows whose top
+prediction lies within 161 km of the truth, over the same rows as Acc@1, so
+an abstention counts as a miss. This is how the committed WNUT-2016 results
+were computed. The median and mean error are over the rows on which the
+engine named a place (`n_km`), since an abstention has no distance, and the
+abstentions are reported separately (`n_abstained`).
 """
 
 from __future__ import annotations
@@ -126,14 +133,16 @@ class EngineMetrics:
     mean_rank_found: float = 0.0
     n_rank_found: int = 0
     # Distance error of the top-1 prediction vs. ground truth (geolocation
-    # convention). Rows the engine abstained on are excluded, because it
-    # named no place and is therefore neither near nor far, and scoring an
-    # abstention as a miss would place a median of 0 km beside an engine that
-    # named no place.
+    # convention). The median and mean error leave out the rows the engine
+    # abstained on, because it named no place and so has no distance; `n_km`
+    # says how many rows they cover. Acc@161 km is over the same rows as
+    # Acc@1 (those whose truth has a coordinate), with an abstention counted
+    # as a miss; `n_geo` says how many rows it covers.
     median_error_km: float = 0.0
     mean_error_km: float = 0.0
     acc_at_161km: float = 0.0
-    n_geo: int = 0  # rows contributing to the distance metrics
+    n_geo: int = 0  # rows behind Acc@161 km, abstentions included
+    n_km: int = 0  # rows behind the median and mean error, abstentions excluded
     n_abstained: int = 0  # rows where the engine named no place at all
     median_latency_ms: float = 0.0
     total_cost_usd: float = 0.0
@@ -153,6 +162,7 @@ class EnsembleMetrics:
     median_error_km: float = 0.0
     acc_at_161km: float = 0.0
     n_geo: int = 0
+    n_km: int = 0
     n_evaluated: int = 0
     # How often the ensemble's top-1 differed from the best single engine in the bucket.
     differs_from_best_single_rate: float = 0.0
@@ -326,6 +336,9 @@ def compute_summary(
             costs.append(pred.cost_usd)
             if pred.abstain or not pred.city:
                 n_abstained += 1
+                # A miss for Acc@161 km, as for Acc@1; no distance.
+                if coords_for(truth) is not None:
+                    within.append(False)
                 continue
             err_km, is_within = _distance_eval(pred.city, truth)
             if coords_for(truth) is not None:
@@ -348,6 +361,7 @@ def compute_summary(
             mean_error_km=mean_km,
             acc_at_161km=acc161,
             n_geo=len(within),
+            n_km=len(errors),
             n_abstained=n_abstained,
             median_latency_ms=statistics.median(latencies) if latencies else 0.0,
             total_cost_usd=sum(costs),
@@ -401,6 +415,7 @@ def compute_summary(
             median_error_km=median_km,
             acc_at_161km=acc161,
             n_geo=len(ens_within),
+            n_km=len(ens_errors),
             n_evaluated=n,
             differs_from_best_single_rate=differs / n,
         )

@@ -9,6 +9,16 @@ The HTTP contract carries its own version, `api_version`, reported by
 be added and an optional parameter may appear; no field is removed or
 renamed. Anything outside the OpenAPI document may change in any release.
 
+## 0.14.7 (2026-11-23), API version 1.0
+
+Acc@161 km has one definition, and the WNUT-2016 adapter writes what a rerun has to report. No engine, limit or committed result changes.
+
+- Acc@161 km is computed over the same rows as Acc@1, with an abstention counted as a miss, which is how the committed WNUT-2016 results were computed and what the paper's table says. It used to leave abstentions out, as the median and mean error still do. `n_geo` is now the number of rows behind Acc@161 km, and the new field `n_km` the number behind the median and mean error, on every engine and fusion row of `/eval`; the Bulk Evaluation table reads `n_km` for its distance column.
+- `eval/adapters/run_wnut_eval.py` records each engine's attempted calls, failed calls or unreadable replies, replies that named no catalogue place and abstentions in the manifest (`engine_outcomes`) and per scored section (`coverage`), and writes a per-row CSV with no tweet text. A failed call is left out of the paired McNemar tests, as it is left out of Acc@1.
+- The verification flag's per-level consensus can be taken by majority vote, one vote per engine, through `triangulate(..., consensus="majority")` and the adapter's `--flag-consensus`; the confidence-weighted vote stays the default. The adapter reports the flag under both rules and over a sweep of `flag_radius_km` values (`--flag-radius-sweep`), as JSON and as a CSV.
+- `scripts/recompute_table.py` reads the paper's current wording again, so it checks every figure the paper prints and skips none.
+- `CITATION.cff` and `pyproject.toml` give the hosted instance's address.
+
 ## 0.14.6 (2026-11-22), API version 1.0
 
 The companion paper is accepted, and the documentation is corrected. No engine, scoring, limit or API change.

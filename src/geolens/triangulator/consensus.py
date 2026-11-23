@@ -8,6 +8,13 @@ post-level and user-level consensus are more than ``flag_radius_km`` apart.
 The flag compares each level's consensus rather than the raw per-engine label
 sets, and gates on great-circle distance, so a same-metro pair is not treated
 like Singapore and Tokyo.
+
+Two consensus rules are available. ``weighted``, the default and the rule
+every reported result was produced under, sums each engine's confidence for
+its top-1 place. ``majority`` gives each engine that named a place one vote,
+so the confidences, which are not calibrated across engines, decide only a
+tie (and the place name a tie of those). ``majority`` exists to measure what
+the confidence weighting contributes to the flag.
 """
 
 from __future__ import annotations
@@ -23,6 +30,8 @@ from geolens.geo import ACC_KM_THRESHOLD, haversine_km
 # A cross-task split this far apart (km) is treated as a maximal-strength
 # signal; the score scales linearly up to it.
 DISAGREEMENT_SCALE_KM = 2000.0
+
+CONSENSUS_RULES = ("weighted", "majority")
 
 
 @dataclass
@@ -46,21 +55,57 @@ class TriangulationResult:
     notes: list[str] = field(default_factory=list)
 
 
-def _vote_top1(per_engine: dict[str, Prediction]) -> tuple[str, float]:
-    """Confidence-weighted top-1 vote over the engines that named a city."""
-    bucket: dict[str, float] = defaultdict(float)
+def _check_rule(rule: str) -> str:
+    if rule not in CONSENSUS_RULES:
+        raise ValueError(f"unknown consensus rule {rule!r}; use one of {CONSENSUS_RULES}")
+    return rule
+
+
+def _vote_top1(
+    per_engine: dict[str, Prediction], rule: str = "weighted"
+) -> tuple[str, float]:
+    """Top-1 vote over the engines that named a city.
+
+    ``weighted`` returns the place with the largest summed confidence and its
+    share of the total confidence. ``majority`` returns the place named by the
+    most engines and its share of the votes; a tie on votes goes to the larger
+    summed confidence, then to the name that sorts first.
+    """
+    weight: dict[str, float] = defaultdict(float)
+    votes: dict[str, int] = defaultdict(int)
     for pred in per_engine.values():
         if not pred.city:
             continue
-        bucket[pred.city] += pred.confidence
-    if not bucket:
+        weight[pred.city] += pred.confidence
+        votes[pred.city] += 1
+    if not weight:
         return "", 0.0
-    best = max(bucket.items(), key=lambda x: x[1])
-    total = sum(bucket.values()) or 1.0
+    if _check_rule(rule) == "majority":
+        best_city = min(votes, key=lambda c: (-votes[c], -weight[c], c))
+        return best_city, votes[best_city] / sum(votes.values())
+    best = max(weight.items(), key=lambda x: x[1])
+    total = sum(weight.values()) or 1.0
     return best[0], best[1] / total
 
 
-def _agreement(per_engine: dict[str, Prediction]) -> float:
+def majority_tied(
+    per_engine: dict[str, Prediction],
+    engines: Mapping[str, str],
+    granularity: str,
+) -> bool:
+    """Whether the most-named place at one level shares its vote count with
+    another, so that the ``majority`` rule fell back on confidence to pick it."""
+    votes: dict[str, int] = defaultdict(int)
+    for n, p in per_engine.items():
+        if engines.get(n) == granularity and p.usable and p.city:
+            votes[p.city] += 1
+    if len(votes) < 2:
+        return False
+    top = sorted(votes.values(), reverse=True)
+    return top[0] == top[1]
+
+
+def _agreement(per_engine: dict[str, Prediction], rule: str = "weighted") -> float:
     """Fraction of the engines that named a city whose top-1 is the consensus.
 
     An engine that abstained named nothing, so counting it in the denominator
@@ -69,7 +114,7 @@ def _agreement(per_engine: dict[str, Prediction]) -> float:
     answered = [p for p in per_engine.values() if p.city]
     if not answered:
         return 0.0
-    consensus, _ = _vote_top1(per_engine)
+    consensus, _ = _vote_top1(per_engine, rule)
     if not consensus:
         return 0.0
     return sum(1 for p in answered if p.city == consensus) / len(answered)
@@ -79,12 +124,13 @@ def _bucket_consensus(
     per_engine: dict[str, Prediction],
     engines: Mapping[str, str],
     granularity: str,
+    rule: str = "weighted",
 ) -> str | None:
-    """Confidence-weighted top-1 city among engines of one granularity."""
+    """Top-1 city among engines of one granularity, under `rule`."""
     bucket = {n: p for n, p in per_engine.items() if engines.get(n) == granularity}
     if not bucket:
         return None
-    return _vote_top1(bucket)[0] or None
+    return _vote_top1(bucket, rule)[0] or None
 
 
 def _bucket_vote(
@@ -104,6 +150,7 @@ def triangulate(
     per_engine: dict[str, Prediction],
     engines: Mapping[str, str] | None = None,
     radius_km: float = ACC_KM_THRESHOLD,
+    consensus: str = "weighted",
 ) -> TriangulationResult:
     """Reduce a dict of {engine_name: Prediction} to a single TriangulationResult.
 
@@ -112,7 +159,11 @@ def triangulate(
 
     `radius_km` is the separation at which the flag is raised. It defaults to
     the 161 km (100 mile) convention every reported number was produced under.
+
+    `consensus` is the rule each level's consensus is taken by: ``weighted``
+    (the default) or ``majority``; see the module docstring.
     """
+    _check_rule(consensus)
 
     # A call that failed carries no city, so it takes no part in any vote and
     # cannot raise or suppress the flag. The result still reports it, and the
@@ -128,8 +179,8 @@ def triangulate(
             notes=["no engine returned a prediction"],
         )
 
-    consensus_city, consensus_conf = _vote_top1(usable)
-    agreement = _agreement(usable)
+    consensus_city, consensus_conf = _vote_top1(usable, consensus)
+    agreement = _agreement(usable, consensus)
 
     notes: list[str] = []
     disagreement = False
@@ -139,8 +190,8 @@ def triangulate(
     post_votes = post_answered = user_votes = user_answered = 0
 
     if engines:
-        post_city = _bucket_consensus(usable, engines, "post") or ""
-        user_city = _bucket_consensus(usable, engines, "user") or ""
+        post_city = _bucket_consensus(usable, engines, "post", consensus) or ""
+        user_city = _bucket_consensus(usable, engines, "user", consensus) or ""
         post_votes, post_answered = _bucket_vote(usable, engines, "post", post_city)
         user_votes, user_answered = _bucket_vote(usable, engines, "user", user_city)
         if post_city and user_city and post_city != user_city:

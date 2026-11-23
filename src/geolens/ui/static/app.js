@@ -3659,7 +3659,8 @@ function rankCell(m) {
 }
 
 function distanceCell(m) {
-  if (!m.n_geo) return `<td title="No row where this engine named a place">n/a</td>`;
+  const nKm = m.n_km ?? m.n_geo;
+  if (!nKm) return `<td title="No row where this engine named a place">n/a</td>`;
   return `<td>${fmtKm(m.median_error_km)}</td>`;
 }
 
@@ -4272,7 +4273,7 @@ function batchSummaryToLatex(s, manifest) {
   const rank = m => m.n_rank_found
     ? `${m.mean_rank_found.toFixed(2)} {\\scriptsize (${m.n_rank_found}/${m.n_evaluated})}`
     : `n/a {\\scriptsize (0/${m.n_evaluated})}`;
-  const km = m => (m.n_geo ? m.median_error_km.toFixed(0) : "n/a");
+  const km = m => ((m.n_km ?? m.n_geo) ? m.median_error_km.toFixed(0) : "n/a");
   const acc161 = m => (m.n_geo ? (m.acc_at_161km*100).toFixed(1) : "n/a");
   const engines = Object.values(s.per_engine).sort((a, b) => b.acc_at_1 - a.acc_at_1);
   for (const m of engines) {
