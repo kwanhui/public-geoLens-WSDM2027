@@ -10,7 +10,7 @@ short_description: Comparing zero-shot social media geolocation engines
 # GeoLens
 
 Live instance: <https://kwanhui-geo-lens.hf.space> (Hugging Face Spaces).
-Video: <https://youtu.be/ArKLLrxWXCk>.
+Video: <https://youtu.be/D-rmPCf5C9M>.
 Source: <https://github.com/kwanhui/public-geoLens-WSDM2027>.
 
 GeoLens runs six geolocation engines on one input, three of them at both the
@@ -552,7 +552,7 @@ instance is at
 <https://kwanhui-geo-lens.hf.space>. The source code
 is at
 [`public-geoLens-WSDM2027`](https://github.com/kwanhui/public-geoLens-WSDM2027),
-and the demo video is at <https://youtu.be/ArKLLrxWXCk>.
+and the demo video is at <https://youtu.be/D-rmPCf5C9M>.
 
 ## Citation
 

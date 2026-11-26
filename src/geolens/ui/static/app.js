@@ -371,7 +371,7 @@ function renderFooterEngines() {
 // ---------- the links in the header ----------
 // The recording's address and its label, in one place.
 const VIDEO_LINK = {
-  url: "https://youtu.be/ArKLLrxWXCk",
+  url: "https://youtu.be/D-rmPCf5C9M",
   label: "Video",
 };
 
